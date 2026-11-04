@@ -1,0 +1,61 @@
+// 입장(닉네임·내 색)과 첫 화면(방 만들기 / 링크로 들어가기) — 기획서 2.1장
+import { ROOM } from '@aibg/shared/room'
+import { PLAYER_COLORS, loadMe, saveMe, type Me } from '../identity.ts'
+import { h } from './dom.ts'
+
+export function identityForm(onDone: (me: Me) => void, note?: string): HTMLElement {
+  const me = loadMe()
+  let color = me?.color ?? PLAYER_COLORS[Math.floor(Math.random() * PLAYER_COLORS.length)]!
+  const name = h('input', { id: 'name', maxlength: ROOM.nameMaxLength, placeholder: '닉네임', value: me?.name ?? '' }) as HTMLInputElement
+  const swatches = h('div', { class: 'swatches' })
+  const drawSwatches = () => {
+    swatches.replaceChildren(
+      ...PLAYER_COLORS.map((c) =>
+        h('button', {
+          class: `swatch${c === color ? ' on' : ''}`,
+          style: `background:${c}`,
+          title: '내 색',
+          onclick: () => {
+            color = c
+            drawSwatches()
+          },
+        }),
+      ),
+    )
+  }
+  drawSwatches()
+  const submit = (e: Event) => {
+    e.preventDefault()
+    const n = name.value.trim()
+    if (!n) return name.focus()
+    onDone(saveMe(n, color))
+  }
+  return h(
+    'form',
+    { class: 'card narrow', onsubmit: submit },
+    h('h2', {}, '누구세요?'),
+    note && h('p', { class: 'muted' }, note),
+    name,
+    h('p', { class: 'muted' }, '내 색 — 옷 띠와 이름표에 칠해져요'),
+    swatches,
+    h('button', { type: 'submit', class: 'primary' }, '들어가기'),
+  )
+}
+
+export function homeScreen(me: Me, actions: { create(): void; join(code: string): void; rename(): void }): HTMLElement {
+  const code = h('input', { id: 'join-code', maxlength: ROOM.codeLength, placeholder: '방 코드 6자리' }) as HTMLInputElement
+  const join = (e: Event) => {
+    e.preventDefault()
+    const c = code.value.trim().toUpperCase()
+    if (c.length === ROOM.codeLength) actions.join(c)
+  }
+  return h(
+    'div',
+    { class: 'card narrow' },
+    h('h1', {}, 'AI 보드게임'),
+    h('p', {}, h('span', { class: 'dot', style: `background:${me.color}` }), ` ${me.name} `, h('a', { href: '#', onclick: (e: Event) => (e.preventDefault(), actions.rename()) }, '바꾸기')),
+    h('button', { class: 'primary', id: 'create-room', onclick: () => actions.create() }, '방 만들기'),
+    h('form', { class: 'row', onsubmit: join }, code, h('button', { type: 'submit' }, '들어가기')),
+    h('p', { class: 'muted' }, '친구가 보낸 초대 링크를 열어도 바로 들어가요.'),
+  )
+}

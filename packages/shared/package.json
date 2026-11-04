@@ -1,9 +1,11 @@
 {
-  "name": "@sarangbang/shared",
+  "name": "@aibg/shared",
   "private": true,
   "type": "module",
   "exports": {
     "./core/*": "./src/core/*.ts",
-    "./hanyang": "./src/hanyang/index.ts"
+    "./hanyang": "./src/hanyang/index.ts",
+    "./room": "./src/room/index.ts",
+    "./games": "./src/games.ts"
   }
 }

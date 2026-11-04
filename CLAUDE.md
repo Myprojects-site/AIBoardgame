@@ -8,9 +8,12 @@
 
 ## 실행
 
-- Node 24 이상 (`.ts`를 그대로 실행한다. 빌드 단계 없음)
-- `npm test` — 규칙 테스트 (node:test)
-- `npm run typecheck` — 타입 확인
+- Node 24 이상 (`.ts`를 그대로 실행한다. 공용 코드는 빌드 단계 없음)
+- `npm run dev` — 화면 개발 서버 (http://localhost:5173). 한 브라우저에서 여러 사람을 시험할 땐 주소에 `?p=2`처럼 붙인다(저장 칸이 따로 생김)
+- `npm run build` — 깃허브 페이지에 올릴 파일 (`client/dist`)
+- `npm test` — 규칙·방 테스트 (node:test)
+- `npm run typecheck` — 타입 확인 (공용 + 화면)
+- `npm run e2e` — 빌드 뒤, 창 없이 헤드리스 Edge 세 개로 실제 PeerJS 연결 한 판 + 방장 새로고침 + 방장 넘기기. 사용자 화면에 창을 띄우지 않는다
 - `npm run cards` — 카드 표 다시 만들기 (`tools/make_cards.ts` → `data/cards.gen.ts`)
 - `npm run sim -- 300` — 봇 밸런스 시뮬레이션 (기획서 4.6장)
 
@@ -18,10 +21,16 @@
 
 ```
 packages/shared/   규칙 모듈. 방장 브라우저(판정)·모든 브라우저(미리보기)·시뮬레이션이 같이 쓴다
-  src/core/        모든 게임 공통: GameRules 모양, 시드 난수
-  src/hanyang/     한양 상단: constants(수치), types, rules, bot, data/
+  src/core/        모든 게임 공통: GameRules 모양, 시드 난수, 신분(rank)
+  src/room/        방: RoomHost(입장·자리·설정·시작·판정·봇·넘기기), 메시지 타입. 연결과 무관한 순수 코드
+  src/games.ts     게임 목록 (새 게임은 여기와 client/src/games/registry.ts에 더한다)
+  src/hanyang/     한양 상단: constants(수치), types, rules, game(GameRules), bot, data/
   test/
-client/            (2단계~) Vite 화면. net/ = 방장 판정·참가자 접속(PeerJS), 3단계부터 Three.js 테이블
+client/            Vite 화면
+  src/net/         방장(PeerJS 주소 = aibg-<방 코드>, RoomHost 실행)·참가자(재접속) 세션
+  src/ui/          입장·첫 화면·방(대기실, 결과, 채팅)
+  src/games/       게임별 판. 지금은 글자 판, 3단계부터 Three.js 테이블
+.github/workflows/ main에 올리면 테스트 → 깃허브 페이지 배포
 tools/             카드 표 생성, 시뮬레이션, 그림 정리
 assets/            최종 그림 / assets_src/ 바나나 프로 원본
 docs/              기획 문서
@@ -46,3 +55,5 @@ docs/              기획 문서
 - 11/4 결정: 4인은 목표 31점을 못 고른다(카드 소진 30%). 인원별로 막는 값은 `OptionSpec.choices[].players`로 표시하고 `choiceAllowed()`로 확인한다.
 - 11/4 결정 (기획서 9장): 사이트 이름 "AI 보드게임", 카드 그림 55장(장터는 색마다 1장), 음성 없이 글 채팅만, 신분 아바타(천민→상민→중인→양반, 1등은 왕), 선택 규칙 없음, 깃허브 페이지 + 방장 브라우저 판정.
 - 11/4 남은 문제: 게임 이름 미정, 5점 대상단이 덜 팔림(사람 테스트에서 확인), 튜토리얼 데이터는 5단계에서.
+- 11/4 2단계 만든 것: 방 로직(RoomHost, 테스트 12개), PeerJS 연결(방장 판정·참가자 재접속·방장 주소 다시 열기·방장 넘기기), 글자 화면(입장·첫 화면·대기실 설정·한양 상단 판·결과·채팅·봇이 대신 두기), 깃허브 페이지 배포 설정, 헤드리스 e2e 통과.
+- 11/4 2단계 남은 문제: 깃허브 저장소 없음(배포 전), 방장이 새로고침하는 순간 보낸 수는 사라질 수 있음(화면에 그대로 내 차례로 남아 다시 누르면 됨), 회사·학교 망처럼 엄격한 네트워크에서는 WebRTC가 막힐 수 있음(필요하면 TURN 서버 추가), 튜토리얼 설정은 저장만 하고 5단계에서 씀.

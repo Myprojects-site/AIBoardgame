@@ -1,0 +1,104 @@
+/* 2단계 글자 화면. 3단계에서 3D 테이블이 판 자리를 차지한다. */
+:root {
+  --paper: #f4ecd8;
+  --paper-2: #e9dfc6;
+  --ink: #2b2420;
+  --muted: #7a6d60;
+  --line: #c9b99a;
+  --accent: #8e2b1f;
+  --cheong: #3a8f8a;
+  --jeok: #c0392b;
+  --hwang: #c9a227;
+  --baek: #f7f3ea;
+  --heuk: #2f2f2f;
+  --yeop: #a07a3e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 14px/1.5 system-ui, 'Malgun Gothic', sans-serif;
+}
+#app { padding: 12px 16px; max-width: 1400px; margin: 0 auto; }
+h1, h2, h3 { margin: 0.4em 0; }
+h3 { font-size: 13px; color: var(--muted); }
+button, input, select { font: inherit; }
+button {
+  border: 1px solid var(--line);
+  background: #fffaf0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.small { padding: 2px 8px; font-size: 12px; }
+input, select { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: #fffdf7; }
+.card { background: var(--paper-2); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.narrow { max-width: 380px; margin: 40px auto; display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
+.swatches { display: flex; gap: 6px; }
+.swatch { width: 28px; height: 28px; border-radius: 50%; padding: 0; border: 2px solid transparent; }
+.swatch.on { border-color: var(--ink); }
+.netstatus { display: none; background: #fff3c4; border: 1px solid #e0c060; padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; }
+.netstatus.on { display: block; }
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff;
+  padding: 8px 14px; border-radius: 8px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+.toast.on { opacity: 0.92; }
+
+.topbar { display: flex; gap: 10px; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+.spacer { flex: 1; }
+.layout { display: grid; grid-template-columns: 1fr 300px; gap: 14px; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.aside { display: flex; flex-direction: column; gap: 10px; }
+.chat { display: flex; flex-direction: column; gap: 6px; }
+.chatlog { height: 280px; overflow-y: auto; background: #fffdf7; border: 1px solid var(--line); border-radius: 6px; padding: 6px; font-size: 13px; }
+.chatlog .sys { color: var(--muted); font-style: italic; }
+.chat input { flex: 1; }
+.notice { background: #fff3c4; padding: 6px; border-radius: 6px; margin: 0; }
+
+.seats { padding-left: 20px; }
+.seats li { margin: 4px 0; display: flex; gap: 8px; align-items: center; }
+.settings { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; max-width: 360px; }
+.check { display: flex; align-items: center; gap: 4px; }
+.who.away { opacity: 0.6; }
+.rank { font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; margin-left: 4px; background: #fffaf0; }
+.rank-왕 { background: #f5d76e; border-color: #b8901c; }
+.results { margin-bottom: 12px; }
+
+.status { font-size: 15px; margin-bottom: 6px; }
+.myturn { color: var(--accent); }
+.prompt { background: #fff3c4; padding: 8px; border-radius: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.supply, .patrons { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.pile { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+.tok { display: inline-block; border-radius: 12px; padding: 1px 8px; font-size: 12px; border: 1px solid rgba(0,0,0,0.25); color: #fff; margin: 1px; }
+button.tok { padding: 4px 10px; font-size: 13px; }
+.tok.picked { outline: 3px solid var(--ink); }
+.tok-cheong { background: var(--cheong); }
+.tok-jeok { background: var(--jeok); }
+.tok-hwang { background: var(--hwang); color: var(--ink); }
+.tok-baek { background: var(--baek); color: var(--ink); }
+.tok-heuk { background: var(--heuk); }
+.tok-yeop { background: var(--yeop); }
+.patron { background: #fffaf0; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+.market { display: flex; flex-direction: column; gap: 6px; }
+.tierrow { display: flex; gap: 6px; }
+.deck { width: 70px; text-align: center; font-size: 12px; background: var(--paper-2); border: 1px dashed var(--line); border-radius: 6px; padding: 4px; }
+.cardbox { width: 140px; min-height: 108px; background: #fffaf0; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: 12px;
+  display: flex; flex-direction: column; gap: 2px; }
+.cardbox.tier2 { background: #fdf3e0; }
+.cardbox.tier3 { background: #f8e8d8; }
+.cardbox.empty, .cardbox.hidden { color: var(--muted); justify-content: center; align-items: center; }
+.cardtop { display: flex; justify-content: space-between; }
+.cardname { font-weight: 600; }
+.cardbtns { margin-top: auto; display: flex; gap: 4px; }
+.players { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.player { background: #fffaf0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.player.current { border: 2px solid var(--accent); }
+.player.mine { background: #fff6e2; }
+.pname { display: flex; justify-content: space-between; }
+.reserved { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }

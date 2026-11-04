@@ -3,7 +3,6 @@ import {
   IllegalAction,
   choiceAllowed,
   type GameResult,
-  type GameRules,
   type OptionSpec,
   type Options,
   type PlayerId,
@@ -24,7 +23,7 @@ import type {
   TokenCount,
 } from './types.ts'
 
-const TARGET_OPTION: OptionSpec = {
+export const TARGET_OPTION: OptionSpec = {
   id: 'target',
   label: '목표 점수',
   choices: RULES.targetChoices.map((v) => ({ value: v, label: `${v}점`, players: RULES.targetPlayers[v] })),
@@ -106,7 +105,7 @@ function actionKey(a: HanyangAction): string {
   return JSON.stringify(a)
 }
 
-function setup(players: PlayerId[], seed: number, options: Options): HanyangState {
+export function setup(players: PlayerId[], seed: number, options: Options): HanyangState {
   if (players.length < RULES.minPlayers || players.length > RULES.maxPlayers) {
     throw new Error(`인원은 ${RULES.minPlayers}~${RULES.maxPlayers}명`)
   }
@@ -259,7 +258,7 @@ function takePatron(s: HanyangState, p: PlayerState, id: string): void {
   p.patrons.push(id)
 }
 
-function apply(state: HanyangState, player: PlayerId, action: HanyangAction): HanyangState {
+export function apply(state: HanyangState, player: PlayerId, action: HanyangAction): HanyangState {
   const key = actionKey(action)
   if (!legalActions(state, player).some((a) => actionKey(a) === key)) {
     throw new IllegalAction(`할 수 없는 행동: ${key}`)
@@ -313,7 +312,7 @@ function apply(state: HanyangState, player: PlayerId, action: HanyangAction): Ha
   return s
 }
 
-function result(s: HanyangState): GameResult | null {
+export function result(s: HanyangState): GameResult | null {
   if (s.phase !== 'over') return null
   const rows = s.players.map((p) => ({ player: p.id, score: pointsOf(p), cards: p.cards.length }))
   // 높은 점수, 같으면 산 카드가 적은 쪽이 앞. 둘 다 같으면 같은 등수.
@@ -325,7 +324,7 @@ function result(s: HanyangState): GameResult | null {
   return { ranking, reason: s.endReason! }
 }
 
-function view(s: HanyangState, viewer: PlayerId | 'spectator'): HanyangView {
+export function view(s: HanyangState, viewer: PlayerId | 'spectator'): HanyangView {
   const { decks, players, ...rest } = structuredClone(s)
   return {
     ...rest,
@@ -335,18 +334,4 @@ function view(s: HanyangState, viewer: PlayerId | 'spectator'): HanyangView {
       reserved: p.reserved.map((r) => ({ blind: r.blind, card: r.blind && p.id !== viewer ? null : r.card })),
     })),
   }
-}
-
-export const hanyang: GameRules<HanyangState, HanyangAction, HanyangView> = {
-  id: 'hanyang',
-  name: '한양 상단',
-  players: { min: RULES.minPlayers, max: RULES.maxPlayers },
-  options: [TARGET_OPTION],
-  tutorial: [],
-  setup,
-  currentPlayer: (s) => (s.phase === 'over' ? null : activePlayer(s).id),
-  legalActions,
-  apply,
-  result,
-  view,
 }

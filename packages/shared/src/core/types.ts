@@ -1,4 +1,5 @@
 // 모든 게임이 따르는 규칙 모듈 모양 (기획서 2.2장)
+import type { Rng } from './rng.ts'
 
 export type PlayerId = string
 
@@ -48,4 +49,8 @@ export interface GameRules<State, Action, View> {
   apply(state: State, player: PlayerId, action: Action): State
   result(state: State): GameResult | null
   view(state: State, viewer: PlayerId | 'spectator'): View
+  /** 0~1. 신분 아바타(기획서 3.5장)에 쓴다 */
+  progress(state: State, player: PlayerId): number
+  /** 빈자리·자리 비운 사람 대신 둘 때 */
+  bot(state: State, player: PlayerId, rng: Rng): Action
 }
