@@ -22,6 +22,7 @@ export const ROOM = {
   chatKeep: 50,
   chatMaxLength: 200,
   maxMembers: 12,
+  photoMaxLength: 60_000, // data URL 글자 수. 화면에서 96px로 줄이면 5~10k
   awayNoticeSeconds: 120, // 차례인 사람이 이만큼 없으면 방장에게 "봇이 대신하기"를 권한다
   botDelayMs: 700,
   diceIntroMs: 4200, // 시작 주사위 연출 동안은 첫 봇이 기다린다
@@ -81,6 +82,11 @@ export function resumeRoom(saved: RoomState, hostId: string): RoomState {
 
 export class RoomError extends Error {}
 
+/** 사진은 작은 그림 data URL만 받는다. 아니면 없는 것으로 */
+function validPhoto(p: unknown): string | undefined {
+  return typeof p === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(p) && p.length <= ROOM.photoMaxLength ? p : undefined
+}
+
 export interface RoomHostIo {
   send(to: string, msg: HostMsg): void
   save?(room: RoomState): void
@@ -111,6 +117,7 @@ export class RoomHost {
       return
     }
     this.changed()
+    if (msg.t === 'hello') this.sendPhotos()
   }
 
   disconnect(id: string): void {
@@ -168,7 +175,7 @@ export class RoomHost {
       code: r.code,
       you: id,
       hostId: r.hostId,
-      members: r.members,
+      members: r.members.map(({ photo: _photo, ...m }) => m),
       seats: r.seats,
       settings: r.settings,
       phase: r.phase,
@@ -205,6 +212,13 @@ export class RoomHost {
     for (const m of this.room.members) {
       if (m.connected && m.id !== from) this.io.send(m.id, { t: 'presence', from, at, hover: msg.hover })
     }
+  }
+
+  /** 프로필 사진 묶음: 방 화면과 따로, 누가 들어올 때만 모두에게 */
+  private sendPhotos(): void {
+    const photos: Record<string, string> = {}
+    for (const m of this.room.members) if (m.photo) photos[m.id] = m.photo
+    for (const m of this.room.members) if (m.connected) this.io.send(m.id, { t: 'photos', photos })
   }
 
   private changed(): void {
@@ -307,10 +321,12 @@ export class RoomHost {
     if (msg.id !== from) throw new RoomError('잘못된 인사')
     const name = String(msg.name).trim().slice(0, ROOM.nameMaxLength)
     if (!name) throw new RoomError('닉네임을 정해 주세요')
+    const photo = validPhoto(msg.photo)
     const known = this.member(from)
     if (known) {
       known.name = name
       known.color = msg.color
+      known.photo = photo
       known.connected = true
       // 자리 비운 동안 봇이 대신 뒀으면 돌려준다
       if (this.room.standIn.includes(from)) {
@@ -322,7 +338,7 @@ export class RoomHost {
     const r = this.room
     if (r.phase !== 'lobby' && !r.settings.spectators) throw new RoomError('게임 중이고 구경꾼을 받지 않는 방이에요')
     if (r.members.length >= ROOM.maxMembers) throw new RoomError('방이 꽉 찼어요')
-    r.members.push({ id: from, name, color: msg.color, connected: true })
+    r.members.push({ id: from, name, color: msg.color, connected: true, photo })
     if (from !== r.hostId) this.system(`${name}님이 들어왔어요`)
   }
 

@@ -5,6 +5,9 @@ import { spawn } from 'node:child_process'
 import { chromium, type Page } from 'playwright-core'
 
 const PORT = 4173
+// 프로필 사진 시험용 8×8 빨간 PNG
+const RED_PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR4nGM4oaGBFTEMLQkAgl1GAWqNFmsAAAAASUVORK5CYII='
 // 스크린샷을 남길 폴더 (없으면 안 찍음): npm run e2e -- <폴더>
 const OUT = process.argv[2]
 const BASE = `http://localhost:${PORT}/`
@@ -71,6 +74,9 @@ async function main() {
 
     // 방장: 이름 → 방 만들기
     await a!.goto(BASE)
+    // 방장만 프로필 사진을 올린다 (셋째·둘째는 기본 사진)
+    await a!.setInputFiles('#photo-file', { name: 'me.png', mimeType: 'image/png', buffer: Buffer.from(RED_PNG, 'base64') })
+    await a!.waitForFunction(() => ((globalThis as any).document.getElementById('photo-preview')?.src ?? '').startsWith('data:image/jpeg'))
     await enterName(a!, '방장')
     await a!.click('#create-room')
     // 아무도 안 들어와도 방장 화면에 대기실이 바로 떠야 한다 (11/4: "들어가는 중…"에 멈춰 있던 버그)
@@ -85,17 +91,30 @@ async function main() {
     }
     await a!.waitForFunction(() => (globalThis as any).__aibg.view?.members.length === 3)
     log('세 명 입장')
+    // 둘째 화면: 방장 이름표에 올린 사진(jpeg), 셋째는 기본 사진(png)
+    await b!.waitForFunction(() => {
+      const imgs = [...(globalThis as any).document.querySelectorAll('.seats img.photo, .lobby img.photo')] as any[]
+      return imgs.some((i) => i.src.startsWith('data:image/jpeg')) && imgs.some((i) => i.src.startsWith('data:image/png'))
+    }, undefined, { timeout: 10_000 })
+    log('프로필 사진: 방장 사진이 둘째 화면에 뜸, 사진 없는 사람은 기본 사진')
 
     // 화면으로 설정·자리·시작
     await a!.selectOption('#set-seats', '3')
     await a!.waitForFunction(() => (globalThis as any).__aibg.view.settings.seats === 3)
     await a!.selectOption('#set-target', '16')
+    // 방금 남이 앉은 자리를 눌러 거절될 수 있다(화면이 아직 안 바뀜) → 앉을 때까지 다시
     for (const p of [a!, b!, c!]) {
-      await p.locator('button', { hasText: '앉기' }).first().click()
-      await p.waitForFunction(() => {
-        const v = (globalThis as any).__aibg.view
-        return v.seats.includes(v.you)
-      })
+      for (let attempt = 0; ; attempt++) {
+        await p.locator('button', { hasText: '앉기' }).first().click()
+        const sat = await p
+          .waitForFunction(() => {
+            const v = (globalThis as any).__aibg.view
+            return v.seats.includes(v.you)
+          }, undefined, { timeout: 3000 })
+          .then(() => true, () => false)
+        if (sat) break
+        if (attempt >= 4) throw new Error('자리에 못 앉음')
+      }
     }
     // 4인으로 늘리면 31점이 막히는지 화면에서 확인
     const disabled31 = await a!.locator('#set-target option[value="31"]').evaluate((o) => (o as any).disabled)
@@ -254,7 +273,7 @@ async function main() {
     await solo.click('#practice button[data-seats="2"]')
     await solo.waitForFunction(() => {
       const v = (globalThis as any).__aibg.view
-      return v?.phase === 'playing' && v.players.length === 2 && v.players[1].startsWith('bot:')
+      return v?.phase === 'playing' && v.players.length === 2 && v.players.some((p: string) => p.startsWith('bot:')) // 차례는 주사위라 AI가 선일 수도
     }, undefined, { timeout: 5000 })
     await solo.waitForSelector('.table3d canvas')
     await autoplay(solo)

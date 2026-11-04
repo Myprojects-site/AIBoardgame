@@ -21,7 +21,7 @@ export function h(tag: string, attrs: Attrs = {}, ...children: (Child | Child[])
 }
 
 export function button(label: string, onClick: () => void, opts: { disabled?: boolean; class?: string; title?: string } = {}) {
-  return h('button', { class: opts.class ?? '', disabled: !!opts.disabled, title: opts.title, onclick: () => onClick() }, label)
+  return h('button', { type: 'button', class: opts.class ?? '', disabled: !!opts.disabled, title: opts.title, onclick: () => onClick() }, label)
 }
 
 export function dot(color: string) {

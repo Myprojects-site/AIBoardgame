@@ -137,3 +137,8 @@ button.tok { padding: 4px 10px; font-size: 13px; }
 .gallery-cards { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
 .gallery-cards img { width: 128px; height: auto; border-radius: 8px; flex: none; }
 .table3d.free .table-canvas { cursor: grab; }
+
+/* 프로필 사진 */
+.photo { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; vertical-align: middle; border: 2px solid var(--line); }
+.photo.big { width: 72px; height: 72px; border-width: 3px; }
+.col { display: flex; flex-direction: column; gap: 4px; }

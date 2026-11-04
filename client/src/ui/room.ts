@@ -3,6 +3,7 @@ import { choiceAllowed } from '@aibg/shared/core/types'
 import { GAMES } from '@aibg/shared/games'
 import { BOT_PREFIX, ROOM, TURN_LIMITS, isBot, type ClientMsg, type RoomSettings, type RoomView } from '@aibg/shared/room'
 import { BOARDS } from '../games/registry.ts'
+import { photoFor } from '../photos.ts'
 import { isMuted, setMuted } from '../sound.ts'
 import { button, dot, h } from './dom.ts'
 
@@ -27,7 +28,7 @@ function label(v: RoomView, id: string): HTMLElement {
   return h(
     'span',
     { class: `who${m && !m.connected ? ' away' : ''}` },
-    dot(m?.color ?? '#999'),
+    h('img', { class: 'photo', src: photoFor(id, m?.color ?? '#8a8a8a'), alt: '', style: `border-color:${m?.color ?? '#8a8a8a'}` }),
     rank ? h('span', { class: `rank rank-${rank}` }, rank) : '',
     ' ',
     nameOf(v, id),

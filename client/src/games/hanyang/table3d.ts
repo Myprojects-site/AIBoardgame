@@ -20,12 +20,13 @@ import {
   type Token,
 } from '@aibg/shared/hanyang'
 import { REACTIONS, isBot, type TablePoint } from '@aibg/shared/room'
+import { photoFor, photosVersion } from '../../photos.ts'
 import { onEphemeral, type Ephemeral } from '../../presence.ts'
 import { sfx } from '../../sound.ts'
 import { button, h, sameAction } from '../../ui/dom.ts'
 import type { BoardCtx } from '../registry.ts'
 import { statusLine, turnPrompt } from './board.ts'
-import { COIN, avatarHeadY, dieRotation, makeAvatar, makeCoin, makeDie } from './models.ts'
+import { COIN, PORTRAIT, dieRotation, makeCoin, makeDie, makePortrait } from './models.ts'
 import { CARD_H, CARD_W, cardBack, cardFace, cardImage, handTexture, labelTexture, patronFace } from './textures.ts'
 
 // 배치 (월드 단위). 상 윗면 높이 top.
@@ -320,7 +321,7 @@ export class HanyangTable {
       this.closePopup()
     }
     // 판이 그대로면 3D는 다시 만들지 않는다 (시간 표시 때문에 화면은 자주 다시 그린다)
-    const state = JSON.stringify([g, ctx.room.legal, ctx.room.ranks, ctx.room.members, this.picked])
+    const state = JSON.stringify([g, ctx.room.legal, ctx.room.ranks, ctx.room.members, this.picked, photosVersion()])
     if (state !== this.lastState) {
       this.lastState = state
       this.finishTweens()
@@ -534,7 +535,7 @@ export class HanyangTable {
         av.position.set(Math.sin(a) * L.avatarRX, 0, Math.cos(a) * L.avatarRZ)
         av.rotation.y = a + Math.PI
         this.dyn.add(av)
-        this.anchors.set(p.id, av.position.clone().setY(avatarHeadY + 2.1))
+        this.anchors.set(p.id, av.position.clone().setY(PORTRAIT.centerY + 0.3)) // 사진 위에 겹쳐 띄운다 (위쪽은 화면 밖으로 잘림)
       } else {
         this.anchors.set(p.id, area.position.clone().setY(L.top + 1.6))
       }
@@ -641,10 +642,13 @@ export class HanyangTable {
     const ctx = this.ctx!
     const color = ctx.colorOf(p.id)
     const rank = ctx.room.ranks[p.id] ?? '천민'
-    const av = makeAvatar(rank, color)
+    const av = new THREE.Group()
+    const pic = makePortrait(photoFor(p.id, color), color, rank === '왕')
+    pic.position.y = PORTRAIT.centerY
+    av.add(pic)
     const away = !isBot(p.id) && !ctx.room.members.find((m) => m.id === p.id)?.connected
     const tag = label(`[${rank}] ${ctx.nameOf(p.id)}${away ? ' (자리 비움)' : ''}`, 4.4, color)
-    tag.position.y = avatarHeadY + 1.3
+    tag.position.y = PORTRAIT.centerY - PORTRAIT.size / 2 - 0.35 // 사진 아래 (위는 화면 밖으로 잘린다)
     av.add(tag)
     if (g.current === g.players.indexOf(p) && g.phase !== 'over') {
       // 차례 등잔불

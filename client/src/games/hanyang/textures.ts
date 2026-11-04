@@ -175,6 +175,47 @@ export function dieFace(v: number): THREE.CanvasTexture {
   })
 }
 
+/** 프로필 사진 판: 둥근 사진에 내 색 테두리. 왕은 금테와 관 */
+export function portraitTexture(photo: string, color: string, king: boolean): THREE.CanvasTexture {
+  return texture(`portrait:${color}:${king}:${photo}`, 256, 288, (g) => {
+    const cx = 128
+    const cy = 160
+    const r = 112
+    const frame = () => {
+      g.beginPath()
+      g.arc(cx, cy, r, 0, Math.PI * 2)
+      g.lineWidth = king ? 16 : 12
+      g.strokeStyle = king ? '#e0b84a' : color
+      g.stroke()
+      if (king) {
+        g.font = `64px ${FONT}`
+        g.textAlign = 'center'
+        g.textBaseline = 'middle'
+        g.fillText('👑', cx, 34)
+      }
+    }
+    g.beginPath()
+    g.arc(cx, cy, r, 0, Math.PI * 2)
+    g.fillStyle = '#3a312b'
+    g.fill()
+    frame()
+    // 사진은 불러온 뒤에 그린다 (data URL이라 금방)
+    const img = new Image()
+    img.onload = () => {
+      g.save()
+      g.beginPath()
+      g.arc(cx, cy, r - 4, 0, Math.PI * 2)
+      g.clip()
+      g.drawImage(img, cx - r, cy - r, r * 2, r * 2)
+      g.restore()
+      frame()
+      const t = cache.get(`portrait:${color}:${king}:${photo}`)
+      if (t) t.needsUpdate = true
+    }
+    img.src = photo
+  })
+}
+
 /** 다른 사람 손: 그 사람 색 동그라미에 손 */
 export function handTexture(color: string): THREE.CanvasTexture {
   return texture(`hand:${color}`, 128, 128, (g) => {

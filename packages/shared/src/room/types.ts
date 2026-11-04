@@ -11,6 +11,7 @@ export interface Member {
   name: string
   color: string
   connected: boolean
+  photo?: string // 프로필 사진 (작게 줄인 data URL). 방 화면 갱신에는 싣지 않고 photos로 따로 보낸다
 }
 
 export interface ChatLine {
@@ -60,7 +61,7 @@ export type TablePoint = { c: [number, number] } | { p: PlayerId; l: [number, nu
 export type ClientMsg =
   | { t: 'presence'; at: TablePoint | null; hover: string | null }
   | { t: 'react'; emoji: string }
-  | { t: 'hello'; id: string; name: string; color: string }
+  | { t: 'hello'; id: string; name: string; color: string; photo?: string | null }
   | { t: 'sit'; seat: number }
   | { t: 'stand' }
   | { t: 'settings'; settings: Partial<RoomSettings> }
@@ -97,5 +98,6 @@ export type HostMsg =
   | { t: 'room'; view: RoomView }
   | { t: 'error'; text: string }
   | { t: 'becomeHost'; room: RoomState } // 방장 넘기기
+  | { t: 'photos'; photos: Record<string, string> } // 누가 들어오거나 사진을 바꿀 때만
   | { t: 'presence'; from: string; at: TablePoint | null; hover: string | null }
   | { t: 'react'; from: string; emoji: string }

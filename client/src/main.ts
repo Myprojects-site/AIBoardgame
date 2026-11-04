@@ -4,6 +4,7 @@ import { GAMES } from '@aibg/shared/games'
 import { createRoom, defaultSettings, newRoomCode, resumeRoom, type RoomSettings, type RoomState, type RoomView } from '@aibg/shared/room'
 import { hostKey, load, loadMe, store, forget, type Me } from './identity.ts'
 import { guestSession, hostSession, type NetStatus, type Session, type SessionEvents } from './net/session.ts'
+import { setPhotos } from './photos.ts'
 import { emitEphemeral } from './presence.ts'
 import { h } from './ui/dom.ts'
 import { homeScreen, identityForm } from './ui/home.ts'
@@ -62,6 +63,10 @@ function events(me: Me): SessionEvents {
       statusBar.classList.toggle('on', s !== 'online')
     },
     ephemeral: emitEphemeral,
+    photos(p) {
+      setPhotos(p)
+      draw()
+    },
     becomeHost(room) {
       // 방장을 넘겨받았다
       store(hostKey(room.code), room)

@@ -250,6 +250,25 @@ test('반응: 정해진 이모지만, 보낸 사람 포함 모두에게', () => 
   }
 })
 
+test('프로필 사진: 작은 그림만 받고, 방 화면에는 빼고, 들어올 때 모두에게 따로', () => {
+  const t = setup(['host', 'b'])
+  const jpg = 'data:image/jpeg;base64,' + 'A'.repeat(1000)
+  t.host.receive('c', { t: 'hello', id: 'c', name: 'c', color: '#fff', photo: jpg })
+  const photos = (id: string) => (t.inbox.get(id) ?? []).filter((m) => m.t === 'photos').at(-1) as Extract<HostMsg, { t: 'photos' }>
+  assert.deepEqual(photos('b').photos, { c: jpg })
+  assert.deepEqual(photos('c').photos, { c: jpg })
+  assert.equal(t.last('b').members.find((m) => m.id === 'c')!.photo, undefined) // 방 화면에는 안 실림
+  assert.equal(t.saved()!.members.find((m) => m.id === 'c')!.photo, jpg) // 저장은 됨
+
+  // 너무 크거나 그림이 아니면 없는 것으로
+  t.host.receive('b', { t: 'hello', id: 'b', name: 'b', color: '#fff', photo: 'data:image/jpeg;base64,' + 'A'.repeat(70_000) })
+  t.host.receive('host', { t: 'hello', id: 'host', name: 'host', color: '#fff', photo: 'javascript:alert(1)' })
+  assert.deepEqual(photos('c').photos, { c: jpg })
+  // 사진을 지우고 다시 들어오면 빠진다
+  t.host.receive('c', { t: 'hello', id: 'c', name: 'c', color: '#fff', photo: null })
+  assert.deepEqual(photos('b').photos, {})
+})
+
 test('채팅: 앞뒤 공백 정리, 길이 제한, 50줄만 보관', () => {
   const t = setup(['host', 'b'])
   t.host.receive('b', { t: 'chat', text: '   ' })

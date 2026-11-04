@@ -18,6 +18,7 @@ export interface SessionEvents {
   status(s: NetStatus, detail?: string): void
   becomeHost(room: RoomState): void
   ephemeral(msg: Extract<HostMsg, { t: 'presence' | 'react' }>): void
+  photos(photos: Record<string, string>): void
 }
 
 export interface Session {
@@ -40,6 +41,7 @@ export function hostSession(room: RoomState, me: Me, ev: SessionEvents): Session
     if (msg.t === 'room') ev.view(msg.view)
     else if (msg.t === 'error') ev.error(msg.text)
     else if (msg.t === 'presence' || msg.t === 'react') ev.ephemeral(msg)
+    else if (msg.t === 'photos') ev.photos(msg.photos)
   }
   const host = new RoomHost(room, {
     send: (to, msg) => (to === me.id ? deliver(msg) : conns.get(to)?.send(msg)),
@@ -103,7 +105,7 @@ export function hostSession(room: RoomState, me: Me, ev: SessionEvents): Session
   }
 
   open(0)
-  receive(me.id, { t: 'hello', id: me.id, name: me.name, color: me.color })
+  receive(me.id, { t: 'hello', id: me.id, name: me.name, color: me.color, photo: me.photo ?? null })
 
   const close = () => {
     closed = true
@@ -148,7 +150,7 @@ export function guestSession(code: string, me: Me, ev: SessionEvents): Session {
     conn = c
     c.on('open', () => {
       ev.status('online')
-      c.send({ t: 'hello', id: me.id, name: me.name, color: me.color } satisfies ClientMsg)
+      c.send({ t: 'hello', id: me.id, name: me.name, color: me.color, photo: me.photo ?? null } satisfies ClientMsg)
     })
     c.on('data', (data) => {
       const msg = data as HostMsg
@@ -156,6 +158,7 @@ export function guestSession(code: string, me: Me, ev: SessionEvents): Session {
       else if (msg.t === 'error') ev.error(msg.text)
       else if (msg.t === 'becomeHost') ev.becomeHost(msg.room)
       else if (msg.t === 'presence' || msg.t === 'react') ev.ephemeral(msg)
+      else if (msg.t === 'photos') ev.photos(msg.photos)
     })
     c.on('close', () => {
       if (conn === c) retry()

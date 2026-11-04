@@ -8,6 +8,7 @@ export interface Me {
   id: string
   name: string
   color: string
+  photo?: string // 프로필 사진 (photos.ts가 작게 줄인 data URL)
 }
 
 export const storageKey = (key: string) => `aibg.${key}${suffix ? `.p${suffix}` : ''}`
@@ -42,8 +43,8 @@ export function loadMe(): Me | null {
   return load<Me>('me')
 }
 
-export function saveMe(name: string, color: string): Me {
-  const me: Me = { id: loadMe()?.id ?? crypto.randomUUID(), name, color }
+export function saveMe(name: string, color: string, photo?: string): Me {
+  const me: Me = { id: loadMe()?.id ?? crypto.randomUUID(), name, color, photo }
   store('me', me)
   return me
 }
