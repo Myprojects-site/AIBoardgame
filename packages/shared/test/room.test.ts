@@ -90,6 +90,28 @@ test('시작: 빈자리는 봇 켜야, 숨긴 정보는 사람마다 가려서',
   assert.deepEqual(Object.keys(t.last('b').ranks).sort(), ['b', 'bot:1', 'host'])
 })
 
+test('시작 주사위: 높은 눈이 먼저, 채팅에 결과, 다시 하기면 지움', () => {
+  const faces = [2, 6, 4] // host, b, c 순서로 굴림
+  let i = 0
+  const inbox = new Map<string, HostMsg[]>()
+  const host = new RoomHost(createRoom('ABCDEF', { id: 'host', name: '방장', color: '#fff' }), {
+    send: (to, m) => inbox.set(to, [...(inbox.get(to) ?? []), m]),
+    random: () => (i < faces.length ? (faces[i++]! - 1) / 6 + 0.01 : 0.3),
+  })
+  for (const [n, id] of [['방장', 'host'], ['둘', 'b'], ['셋', 'c']]) host.receive(id!, { t: 'hello', id: id!, name: n!, color: '#fff' })
+  host.receive('host', { t: 'settings', settings: { seats: 3 } })
+  host.receive('host', { t: 'sit', seat: 0 })
+  host.receive('b', { t: 'sit', seat: 1 })
+  host.receive('c', { t: 'sit', seat: 2 })
+  host.receive('host', { t: 'start' })
+  assert.deepEqual(host.room.players, ['b', 'c', 'host'])
+  const v = host.viewFor('c')
+  assert.equal(v.current, 'b') // 6이 선
+  assert.deepEqual(v.dice.map((d) => d.rolls), [[2], [6], [4]])
+  assert.ok(v.chat.some((c) => c.text === '차례: 둘 → 셋 → 방장'))
+  assert.equal(v.actions, 0)
+})
+
 test('판정: 차례가 아닌 사람, 구경꾼, 틀린 행동은 거부하고 상태는 그대로', () => {
   const t = setup()
   t.host.receive('host', { t: 'settings', settings: { seats: 2 } })

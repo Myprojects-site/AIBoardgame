@@ -152,6 +152,29 @@ export function patronFace(p: PatronDef): THREE.CanvasTexture {
   })
 }
 
+/** 주사위 한 면 (눈 1~6). 1은 붉은 눈 */
+export function dieFace(v: number): THREE.CanvasTexture {
+  const spots: Record<number, [number, number][]> = {
+    1: [[0.5, 0.5]],
+    2: [[0.27, 0.27], [0.73, 0.73]],
+    3: [[0.25, 0.25], [0.5, 0.5], [0.75, 0.75]],
+    4: [[0.27, 0.27], [0.73, 0.27], [0.27, 0.73], [0.73, 0.73]],
+    5: [[0.25, 0.25], [0.75, 0.25], [0.5, 0.5], [0.25, 0.75], [0.75, 0.75]],
+    6: [[0.28, 0.22], [0.72, 0.22], [0.28, 0.5], [0.72, 0.5], [0.28, 0.78], [0.72, 0.78]],
+  }
+  return texture(`die:${v}`, 128, 128, (g) => {
+    g.fillStyle = '#f6f1e4'
+    roundRect(g, 0, 0, 128, 128, 20)
+    g.fill()
+    g.fillStyle = v === 1 ? '#b8322a' : '#2b2420'
+    for (const [x, y] of spots[v]!) {
+      g.beginPath()
+      g.arc(x * 128, y * 128, v === 1 ? 17 : 11, 0, Math.PI * 2)
+      g.fill()
+    }
+  })
+}
+
 /** 다른 사람 손: 그 사람 색 동그라미에 손 */
 export function handTexture(color: string): THREE.CanvasTexture {
   return texture(`hand:${color}`, 128, 128, (g) => {

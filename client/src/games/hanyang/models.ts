@@ -3,7 +3,7 @@
 import * as THREE from 'three'
 import type { Rank } from '@aibg/shared/core/rank'
 import type { Token } from '@aibg/shared/hanyang'
-import { TOKEN_COLORS } from './textures.ts'
+import { TOKEN_COLORS, dieFace } from './textures.ts'
 
 export const COIN = { r: 0.32, h: 0.07 }
 
@@ -17,6 +17,32 @@ export function makeCoin(t: Token): THREE.Mesh {
   const mesh = new THREE.Mesh(coinGeo, m)
   mesh.userData.shared = true
   return mesh
+}
+
+// 주사위: 상자 면 순서 [+x, -x, +y, -y, +z, -z]에 눈을 붙인다. 맞은편 눈의 합은 7.
+const DIE_FACES = [3, 4, 1, 6, 2, 5]
+const dieGeo = new THREE.BoxGeometry(0.7, 0.7, 0.7)
+let dieMats: THREE.MeshStandardMaterial[] | null = null
+
+export function makeDie(): THREE.Mesh {
+  dieMats ??= DIE_FACES.map((v) => new THREE.MeshStandardMaterial({ map: dieFace(v), roughness: 0.5 }))
+  const m = new THREE.Mesh(dieGeo, dieMats)
+  m.userData.shared = true
+  return m
+}
+
+/** 눈 v가 위로 오게 돌린 방향 (그 위에 좌우 회전 yaw) */
+export function dieRotation(v: number, yaw: number): THREE.Quaternion {
+  const e: Record<number, [number, number, number]> = {
+    1: [0, 0, 0],
+    6: [Math.PI, 0, 0],
+    2: [-Math.PI / 2, 0, 0],
+    5: [Math.PI / 2, 0, 0],
+    3: [0, 0, Math.PI / 2],
+    4: [0, 0, -Math.PI / 2],
+  }
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(...e[v]!))
+  return q.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw))
 }
 
 // 신분별 옷차림 (기획서 3.5장)

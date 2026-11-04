@@ -104,6 +104,21 @@ async function main() {
     await Promise.all([a!, b!, c!].map((p) => p.waitForFunction(() => (globalThis as any).__aibg.view?.phase === 'playing')))
     log('게임 시작')
 
+    // 주사위로 차례: 셋 다 굴러 떨어지고, 높은 눈이 선, 순서 알림
+    await b!.waitForFunction(() => {
+      const d = (globalThis as any).__aibgTable?.othersDebug().dice
+      return d && d.length === 3 && d.every(Boolean)
+    }, undefined, { timeout: 10_000 })
+    if (OUT) await b!.screenshot({ path: `${OUT}/dice.png` })
+    await b!.waitForFunction(() => ((globalThis as any).document.querySelector('.banner.on')?.textContent ?? '').includes('차례:'), undefined, { timeout: 5000 })
+    const dv = await view(b!)
+    const lastRoll = (p: string) => dv.dice.find((d: any) => d.player === p).rolls.at(-1)
+    for (let k = 1; k < dv.players.length; k++) {
+      if (lastRoll(dv.players[k - 1]) < lastRoll(dv.players[k])) throw new Error('주사위 높은 순서가 아님')
+    }
+    if (dv.current !== dv.players[0]) throw new Error('주사위 1등이 선이 아님')
+    log('주사위:', dv.dice.map((d: any) => d.rolls.join('→')).join(', '), '/ 순서 알림 뜸')
+
     // 첫 차례는 3D 테이블을 마우스로: 물건 더미 세 개를 눌러 고르고 가져오기
     const pages = [a!, b!, c!]
     const ids = await Promise.all(pages.map(async (p) => (await view(p)).you as string))

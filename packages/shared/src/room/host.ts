@@ -1,4 +1,5 @@
 // 방장 브라우저에서 도는 방 (기획서 2.4장). 연결(PeerJS)과 저장(localStorage)은 밖에서 넣어 준다.
+import { rollTurnOrder } from '../core/dice.ts'
 import { makeRng } from '../core/rng.ts'
 import { rankOf, type Rank } from '../core/rank.ts'
 import { choiceAllowed, type PlayerId } from '../core/types.ts'
@@ -23,6 +24,7 @@ export const ROOM = {
   maxMembers: 12,
   awayNoticeSeconds: 120, // 차례인 사람이 이만큼 없으면 방장에게 "봇이 대신하기"를 권한다
   botDelayMs: 700,
+  diceIntroMs: 4200, // 시작 주사위 연출 동안은 첫 봇이 기다린다
 }
 
 export const BOT_PREFIX = 'bot:'
@@ -59,6 +61,7 @@ export function createRoom(code: string, host: Omit<Member, 'connected'>, settin
     phase: 'lobby',
     seed: 0,
     players: [],
+    dice: [],
     game: null,
     standIn: [],
     result: null,
@@ -178,6 +181,8 @@ export class RoomHost {
       chat: r.chat,
       standIn: r.standIn,
       turnStartedAt: r.turnStartedAt,
+      dice: r.dice ?? [],
+      actions: r.actions,
       now: this.io.now(),
     }
   }
@@ -288,6 +293,7 @@ export class RoomHost {
         r.phase = 'lobby'
         r.game = null
         r.players = []
+        r.dice = []
         r.standIn = []
         r.result = null
         r.seats = r.seats.map((id) => (id && isBot(id) ? null : id))
@@ -353,7 +359,10 @@ export class RoomHost {
     }
     let bot = 0
     r.seats = r.seats.map((id) => id ?? `${BOT_PREFIX}${++bot}`)
-    r.players = [...(r.seats as string[])]
+    // 차례는 주사위로: 높은 눈부터, 같은 눈끼리는 다시 굴린다
+    const { order, dice } = rollTurnOrder(r.seats as string[], this.io.random)
+    r.players = order
+    r.dice = dice
     r.seed = Math.floor(this.io.random() * 2 ** 31)
     r.game = rules.setup(r.players, r.seed, r.settings.options)
     r.phase = 'playing'
@@ -361,7 +370,10 @@ export class RoomHost {
     r.result = null
     r.actions = 0
     r.turnStartedAt = this.io.now()
-    this.system('게임을 시작해요!')
+    this.system('게임을 시작해요! 주사위로 차례를 정했어요')
+    const name = (id: string) => (isBot(id) ? `AI ${id.slice(BOT_PREFIX.length)}` : (this.member(id)?.name ?? id))
+    this.system(`🎲 ${dice.map((d) => `${name(d.player)} ${d.rolls.join('→')}`).join(', ')}`)
+    this.system(`차례: ${order.map(name).join(' → ')}`)
   }
 
   private applyAction(player: PlayerId, action: unknown): void {

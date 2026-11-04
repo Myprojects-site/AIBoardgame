@@ -132,7 +132,8 @@ export function setup(players: PlayerId[], seed: number, options: Options): Hany
     PATRONS.map((p) => p.id),
     rng,
   ).slice(0, players.length + RULES.extraPatrons)
-  const first = Math.floor(rng() * players.length)
+  // players는 차례 순서대로 온다(방에서 주사위로 정함). 맨 앞 사람이 선.
+  const first = 0
   // 뒷자리 시작 물건: 서로 다른 색을 차례로 나눠 준다
   const startColors = shuffle(COLORS, rng)
   let nextColor = 0

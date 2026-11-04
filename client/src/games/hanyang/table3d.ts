@@ -25,7 +25,7 @@ import { sfx } from '../../sound.ts'
 import { button, h, sameAction } from '../../ui/dom.ts'
 import type { BoardCtx } from '../registry.ts'
 import { statusLine, turnPrompt } from './board.ts'
-import { COIN, avatarHeadY, makeAvatar, makeCoin } from './models.ts'
+import { COIN, avatarHeadY, dieRotation, makeAvatar, makeCoin, makeDie } from './models.ts'
 import { CARD_H, CARD_W, cardBack, cardFace, cardImage, handTexture, labelTexture, patronFace } from './textures.ts'
 
 // 배치 (월드 단위). 상 윗면 높이 top.
@@ -66,6 +66,10 @@ const FX = {
   presenceSendMs: 100,
   presenceStaleMs: 8000,
   hoverLift: 0.12,
+  // 시작 주사위 (방장은 ROOM.diceIntroMs 동안 첫 봇 수를 기다린다)
+  diceStaggerMs: 280,
+  diceFlyMs: 1300,
+  diceStayMs: 3600,
 }
 
 type Pick =
@@ -147,6 +151,17 @@ interface Tween {
   started?: () => void
 }
 
+interface DieAnim {
+  die: THREE.Mesh
+  tag: THREE.Sprite
+  from: THREE.Vector3
+  to: THREE.Vector3
+  axis: THREE.Vector3
+  qFinal: THREE.Quaternion
+  start: number
+  landed: boolean
+}
+
 interface Bubble {
   obj: THREE.Sprite
   anchor: () => THREE.Vector3 | null
@@ -215,6 +230,10 @@ export class HanyangTable {
   private freeBtn: HTMLButtonElement
   private downAt = { x: 0, y: 0 }
   private dragged = false
+  private diceKey = ''
+  private dice: DieAnim[] = []
+  private diceEnd = 0
+  private diceBanner = ''
 
   constructor(onTextMode: () => void) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -313,6 +332,12 @@ export class HanyangTable {
     }
     this.drawHud(g)
     this.placeCamera()
+    // 막 시작한 판이면 차례 주사위를 굴린다 (한 판에 한 번)
+    const diceKey = JSON.stringify([ctx.room.dice, ctx.room.players])
+    if (ctx.room.actions === 0 && ctx.room.dice.length && diceKey !== this.diceKey) {
+      this.diceKey = diceKey
+      this.rollDice(ctx)
+    }
   }
 
   /** 자동 확인(e2e)용: 물건의 화면 좌표 */
@@ -332,6 +357,7 @@ export class HanyangTable {
       others: [...this.others.entries()].map(([id, o]) => ({ id, hand: !!o.target && o.hand.visible, hover: o.hover, ring: o.ring.visible })),
       bubbles: this.bubbles.length,
       flying: this.tweens.length,
+      dice: this.dice.map((d) => d.landed),
     }
   }
 
@@ -719,6 +745,7 @@ export class HanyangTable {
 
   private tick(time: number) {
     const now = performance.now()
+    this.tickDice(now)
     // 날아가는 것들: 포물선
     this.tweens = this.tweens.filter((t) => {
       if (now < t.start) return true
@@ -764,6 +791,69 @@ export class HanyangTable {
       }
     }
     void time
+  }
+
+  private rollDice(ctx: BoardCtx) {
+    this.clearDice()
+    const now = performance.now()
+    const order = ctx.room.players
+    ctx.room.dice.forEach((d, i) => {
+      const area = this.areas.get(d.player)
+      if (!area) return
+      const value = d.rolls[d.rolls.length - 1]!
+      const die = makeDie()
+      // 그 사람 자리에서 던져 상 가운데 쪽에 떨어진다
+      const from = area.position.clone().multiplyScalar(1.15).setY(L.top + 3.2)
+      const to = area.position.clone().multiplyScalar(0.55).setY(L.top + 0.35)
+      const place = order.indexOf(d.player) + 1
+      const tag = label(`${d.rolls.join('→')} · ${place}번째`, 2.8, ctx.colorOf(d.player))
+      tag.visible = false
+      this.fx.add(die, tag)
+      die.position.copy(from)
+      this.dice.push({
+        die,
+        tag,
+        from,
+        to,
+        axis: new THREE.Vector3(Math.random() - 0.5, 1, Math.random() - 0.5).normalize(),
+        qFinal: dieRotation(value, Math.random() * Math.PI * 2),
+        start: now + i * FX.diceStaggerMs,
+        landed: false,
+      })
+    })
+    const name = (p: string) => (p === ctx.me ? '나' : ctx.nameOf(p))
+    this.diceBanner = `🎲 차례: ${order.map(name).join(' → ')}`
+    this.diceEnd = now + (ctx.room.dice.length - 1) * FX.diceStaggerMs + FX.diceFlyMs
+  }
+
+  private clearDice() {
+    for (const d of this.dice) this.fx.remove(d.die, d.tag)
+    for (const d of this.dice) d.tag.material.dispose()
+    this.dice = []
+    this.diceBanner = ''
+  }
+
+  private tickDice(now: number) {
+    if (!this.dice.length) return
+    for (const d of this.dice) {
+      if (now < d.start) continue
+      const k = Math.min(1, (now - d.start) / FX.diceFlyMs)
+      const e = 1 - (1 - k) ** 3
+      d.die.position.lerpVectors(d.from, d.to, e)
+      d.die.position.y += Math.abs(Math.sin(Math.PI * 2.2 * k)) * (1 - k) * 1.4 // 통통 튀며
+      d.die.quaternion.setFromAxisAngle(d.axis, (1 - e) * Math.PI * 6).multiply(d.qFinal)
+      if (k >= 1 && !d.landed) {
+        d.landed = true
+        d.tag.visible = true
+        d.tag.position.copy(d.to).setY(L.top + 1.2)
+        sfx.dice()
+      }
+    }
+    if (this.diceBanner && now >= this.diceEnd) {
+      this.showBanner(this.diceBanner)
+      this.diceBanner = ''
+    }
+    if (now >= this.diceEnd + FX.diceStayMs) this.clearDice()
   }
 
   private bubble(player: string, text: string, life: number, width = 2.2) {

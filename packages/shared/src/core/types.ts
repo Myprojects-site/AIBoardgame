@@ -42,6 +42,7 @@ export interface GameRules<State, Action, View> {
   players: { min: number; max: number }
   options: OptionSpec[]
   tutorial: TutorialStep[]
+  /** players는 차례 순서. 맨 앞 사람이 먼저 둔다 (방이 주사위로 정해서 넘긴다) */
   setup(players: PlayerId[], seed: number, options: Options): State
   currentPlayer(state: State): PlayerId | null
   legalActions(state: State, player: PlayerId): Action[]

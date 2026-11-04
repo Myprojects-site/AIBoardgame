@@ -46,14 +46,14 @@ export function hostSession(room: RoomState, me: Me, ev: SessionEvents): Session
     save: (r) => store(hostKey(r.code), r),
   })
 
-  // 봇 차례면 조금 쉬었다가 둔다
+  // 봇 차례면 조금 쉬었다가 둔다. 첫 수는 주사위 연출이 끝난 뒤에.
   const pump = () => {
     clearTimeout(botTimer)
     if (!closed && host.botTurn()) {
       botTimer = setTimeout(() => {
         host.stepBot()
         pump()
-      }, ROOM.botDelayMs)
+      }, host.room.actions === 0 ? ROOM.diceIntroMs : ROOM.botDelayMs)
     }
   }
   const receive = (from: string, msg: ClientMsg) => {

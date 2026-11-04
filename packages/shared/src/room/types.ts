@@ -1,4 +1,5 @@
 // 방 (기획서 2.1, 2.1.1, 2.4장). 방장 브라우저가 RoomState 전체를 들고, 사람마다 RoomView만 보낸다.
+import type { DiceRoll } from '../core/dice.ts'
 import type { Rank } from '../core/rank.ts'
 import type { GameResult, Options, PlayerId } from '../core/types.ts'
 
@@ -39,7 +40,8 @@ export interface RoomState {
   settings: RoomSettings
   phase: RoomPhase
   seed: number
-  players: PlayerId[] // 게임 시작 때 자리 순서 그대로
+  players: PlayerId[] // 차례 순서 (게임 시작 때 주사위로 정함)
+  dice: DiceRoll[] // 시작 때 굴린 주사위
   game: unknown
   standIn: PlayerId[] // 봇이 대신 두는 사람
   result: GameResult | null
@@ -85,6 +87,8 @@ export interface RoomView {
   chat: ChatLine[]
   standIn: PlayerId[]
   turnStartedAt: number
+  dice: DiceRoll[]
+  actions: number // 지금까지 둔 수. 0이면 막 시작한 판
   now: number
 }
 
