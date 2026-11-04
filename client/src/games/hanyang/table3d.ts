@@ -475,7 +475,7 @@ export class HanyangTable {
       t.colorSpace = THREE.SRGBColorSpace
       t.wrapS = t.wrapT = THREE.RepeatWrapping
       t.repeat.set(rx, ry)
-      t.magFilter = THREE.NearestFilter
+      t.anisotropy = 8
       t.needsUpdate = true
       m.map = t
       m.color.set('#ffffff')

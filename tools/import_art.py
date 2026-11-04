@@ -1,13 +1,13 @@
-"""그림 정리 (6단계): assets_src/<파일>.png → client/public/art/<파일>.png, manifest.json
+"""그림 정리 (6단계): assets_src/<파일>.png → client/public/art/<파일>.webp, manifest.json
 
 실행: npm run art
       npm run art -- --only cards/t2_jeok_3 patrons/heo_jun   (몇 장만)
 
-바나나 프로 원본(아무 크기)을 받아서
+바나나 프로 원본(붓으로 그린 동양풍, 아무 크기)을 받아서
   1) 맞는 비율로 가운데를 자르고
-  2) 게임 도트 크기로 줄이고 (상자 평균)
-  3) 색 수를 줄여 도트 경계를 또렷하게 하고
-  4) 토큰은 동그랗게 잘라 바깥을 투명하게 한다.
+  2) 게임 크기로 부드럽게 줄이고 (붓 자국·번짐이 살게)
+  3) 토큰은 동그랗게 잘라 바깥을 투명하게 하고 (가장자리 부드럽게)
+  4) 가벼운 webp로 저장한다.
 목록·크기는 tools/art_spec.json (npm run art:list 가 만든다).
 """
 
@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 EXTS = ('.png', '.jpg', '.jpeg', '.webp')
-COLORS = 24  # 그림 한 장의 색 수. 적을수록 도트 느낌이 강하다
+QUALITY = 86  # webp 품질. 그림 78장이 합쳐 몇 MB 안쪽이 되게
 
 
 def find_src(src_dir: Path, path: str) -> Path | None:
@@ -43,19 +43,16 @@ def center_crop(img: Image.Image, w: int, h: int) -> Image.Image:
     return img.crop((0, y, iw, y + nh))
 
 
-def to_pixels(img: Image.Image, w: int, h: int) -> Image.Image:
-    small = img.resize((w, h), Image.Resampling.BOX)
-    alpha = small.getchannel('A').point(lambda a: 255 if a >= 128 else 0)
-    rgb = small.convert('RGB').quantize(colors=COLORS, method=Image.Quantize.MEDIANCUT).convert('RGB')
-    out = rgb.convert('RGBA')
-    out.putalpha(alpha)
-    return out
+def shrink(img: Image.Image, w: int, h: int) -> Image.Image:
+    return img.resize((w, h), Image.Resampling.LANCZOS)
 
 
 def round_mask(img: Image.Image) -> Image.Image:
     w, h = img.size
-    mask = Image.new('L', (w, h), 0)
-    ImageDraw.Draw(mask).ellipse((0, 0, w - 1, h - 1), fill=255)
+    # 4배로 그린 동그라미를 줄여서 가장자리를 부드럽게
+    big = Image.new('L', (w * 4, h * 4), 0)
+    ImageDraw.Draw(big).ellipse((0, 0, w * 4 - 1, h * 4 - 1), fill=255)
+    mask = big.resize((w, h), Image.Resampling.LANCZOS)
     alpha = Image.composite(img.getchannel('A'), Image.new('L', (w, h), 0), mask)
     img = img.copy()
     img.putalpha(alpha)
@@ -64,7 +61,7 @@ def round_mask(img: Image.Image) -> Image.Image:
 
 def main() -> None:
     sys.stdout.reconfigure(encoding='utf-8')  # Windows 콘솔에서 한글이 깨지지 않게
-    ap = argparse.ArgumentParser(description='바나나 프로 원본 → 게임 그림')
+    ap = argparse.ArgumentParser(description='바나나 프로 원본(붓 그림) → 게임 그림')
     ap.add_argument('--src', default=str(ROOT / 'assets_src'))
     ap.add_argument('--out', default=str(ROOT / 'client' / 'public' / 'art'))
     ap.add_argument('--only', nargs='*', help='이 그림만 (예: cards/t2_jeok_3)')
@@ -84,16 +81,16 @@ def main() -> None:
             continue
         w, h = s['size']
         img = Image.open(src).convert('RGBA')
-        img = to_pixels(center_crop(img, w, h), w, h)
+        img = shrink(center_crop(img, w, h), w, h)
         if s.get('round'):
             img = round_mask(img)
-        dest = out_dir / f"{s['path']}.png"
+        dest = out_dir / f"{s['path']}.webp"
         dest.parent.mkdir(parents=True, exist_ok=True)
-        img.save(dest, optimize=True)
+        img.save(dest, 'WEBP', quality=QUALITY, method=6)
         made.append(s['path'])
 
     # 화면은 manifest에 있는 그림만 불러온다 (없으면 코드 그림)
-    have = [s['path'] for s in spec['items'] if (out_dir / f"{s['path']}.png").exists()]
+    have = [s['path'] for s in spec['items'] if (out_dir / f"{s['path']}.webp").exists()]
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / 'manifest.json').write_text(json.dumps({'files': have}, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
 

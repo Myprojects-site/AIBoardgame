@@ -15,7 +15,7 @@ export const artReady: Promise<void> = fetch(`${base}art/manifest.json`)
   .catch(() => {})
 
 export const hasArt = (path: string) => files.has(path)
-export const artUrl = (path: string) => `${base}art/${path}.png`
+export const artUrl = (path: string) => `${base}art/${path}.webp`
 
 /** 불러온 그림. 아직 불러오는 중이면 null이고, 다 불러오면 onArt로 알린다 */
 export function artImage(path: string): HTMLImageElement | null {

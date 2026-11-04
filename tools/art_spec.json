@@ -1,11 +1,11 @@
 {
-  "style": "16-bit pixel art, chunky clearly visible pixels, limited warm palette, Joseon-era Korea, hanji paper tones, clean dark outlines, no text, no letters",
+  "style": "traditional Korean ink-and-wash painting with light colors (sumuk damchae), visible expressive brush strokes, soft ink bleeding, warm hanji paper texture, Joseon-era minhwa feeling, muted earthy palette, no text, no letters, no seal stamps",
   "items": [
     {
       "path": "cards/t2_cheong_1",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "분원 사기장 (청자)",
@@ -14,8 +14,8 @@
     {
       "path": "cards/t2_cheong_2",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "상감 공방 (청자)",
@@ -24,8 +24,8 @@
     {
       "path": "cards/t2_cheong_3",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "큰 가마터 (청자)",
@@ -34,8 +34,8 @@
     {
       "path": "cards/t2_cheong_4",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "그릇 도매상 (청자)",
@@ -44,8 +44,8 @@
     {
       "path": "cards/t2_cheong_5",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "사옹원 납품소 (청자)",
@@ -54,8 +54,8 @@
     {
       "path": "cards/t2_cheong_6",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "사기 그릇 객주 (청자)",
@@ -64,8 +64,8 @@
     {
       "path": "cards/t2_jeok_1",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "비단 직조소 (비단)",
@@ -74,8 +74,8 @@
     {
       "path": "cards/t2_jeok_2",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "홍색 염방 (비단)",
@@ -84,8 +84,8 @@
     {
       "path": "cards/t2_jeok_3",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "침선 공방 (비단)",
@@ -94,8 +94,8 @@
     {
       "path": "cards/t2_jeok_4",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "명주 도매상 (비단)",
@@ -104,8 +104,8 @@
     {
       "path": "cards/t2_jeok_5",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "혼수 비단전 (비단)",
@@ -114,8 +114,8 @@
     {
       "path": "cards/t2_jeok_6",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "갓끈 공방 (비단)",
@@ -124,8 +124,8 @@
     {
       "path": "cards/t2_hwang_1",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "홍삼 증포소 (인삼)",
@@ -134,8 +134,8 @@
     {
       "path": "cards/t2_hwang_2",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "개성 삼포 (인삼)",
@@ -144,8 +144,8 @@
     {
       "path": "cards/t2_hwang_3",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "내의원 약재상 (인삼)",
@@ -154,8 +154,8 @@
     {
       "path": "cards/t2_hwang_4",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "약재 도가 (인삼)",
@@ -164,8 +164,8 @@
     {
       "path": "cards/t2_hwang_5",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "약령시 객주 (인삼)",
@@ -174,8 +174,8 @@
     {
       "path": "cards/t2_hwang_6",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "산삼 객주 (인삼)",
@@ -184,8 +184,8 @@
     {
       "path": "cards/t2_baek_1",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "지소 (한지)",
@@ -194,8 +194,8 @@
     {
       "path": "cards/t2_baek_2",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "지물전 (한지)",
@@ -204,8 +204,8 @@
     {
       "path": "cards/t2_baek_3",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "방각본 책방 (한지)",
@@ -214,8 +214,8 @@
     {
       "path": "cards/t2_baek_4",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "부채 공방 (한지)",
@@ -224,8 +224,8 @@
     {
       "path": "cards/t2_baek_5",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "필사방 (한지)",
@@ -234,8 +234,8 @@
     {
       "path": "cards/t2_baek_6",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "책 도매상 (한지)",
@@ -244,8 +244,8 @@
     {
       "path": "cards/t2_heuk_1",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "묵방 (먹)",
@@ -254,8 +254,8 @@
     {
       "path": "cards/t2_heuk_2",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "필방 (먹)",
@@ -264,8 +264,8 @@
     {
       "path": "cards/t2_heuk_3",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "벼루 공방 (먹)",
@@ -274,8 +274,8 @@
     {
       "path": "cards/t2_heuk_4",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "대장간 도가 (먹)",
@@ -284,8 +284,8 @@
     {
       "path": "cards/t2_heuk_5",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "철물 도매상 (먹)",
@@ -294,8 +294,8 @@
     {
       "path": "cards/t2_heuk_6",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 공방",
       "title": "붓 도매상 (먹)",
@@ -304,8 +304,8 @@
     {
       "path": "cards/t3_cheong_1",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "강진 청자 상단 (청자)",
@@ -314,8 +314,8 @@
     {
       "path": "cards/t3_cheong_2",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "분원 도자 무역 (청자)",
@@ -324,8 +324,8 @@
     {
       "path": "cards/t3_cheong_3",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "사옹원 어용 상단 (청자)",
@@ -334,8 +334,8 @@
     {
       "path": "cards/t3_cheong_4",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "경기 분원 관요 (청자)",
@@ -344,8 +344,8 @@
     {
       "path": "cards/t3_jeok_1",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "선전 비단 시전 (비단)",
@@ -354,8 +354,8 @@
     {
       "path": "cards/t3_jeok_2",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "연경 비단 무역 (비단)",
@@ -364,8 +364,8 @@
     {
       "path": "cards/t3_jeok_3",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "상의원 납품 상단 (비단)",
@@ -374,8 +374,8 @@
     {
       "path": "cards/t3_jeok_4",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "운종가 포목 상단 (비단)",
@@ -384,8 +384,8 @@
     {
       "path": "cards/t3_hwang_1",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "개성 송상 (인삼)",
@@ -394,8 +394,8 @@
     {
       "path": "cards/t3_hwang_2",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "의주 만상 (인삼)",
@@ -404,8 +404,8 @@
     {
       "path": "cards/t3_hwang_3",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "동래 왜관 무역 (인삼)",
@@ -414,8 +414,8 @@
     {
       "path": "cards/t3_hwang_4",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "내의원 어용 상단 (인삼)",
@@ -424,8 +424,8 @@
     {
       "path": "cards/t3_baek_1",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "지전 종이 시전 (한지)",
@@ -434,8 +434,8 @@
     {
       "path": "cards/t3_baek_2",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "교서관 납품 상단 (한지)",
@@ -444,8 +444,8 @@
     {
       "path": "cards/t3_baek_3",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "사행 공물 상단 (한지)",
@@ -454,8 +454,8 @@
     {
       "path": "cards/t3_baek_4",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "전주 한지 상단 (한지)",
@@ -464,8 +464,8 @@
     {
       "path": "cards/t3_heuk_1",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "문방사우 상단 (먹)",
@@ -474,8 +474,8 @@
     {
       "path": "cards/t3_heuk_2",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "철물 시전 (먹)",
@@ -484,8 +484,8 @@
     {
       "path": "cards/t3_heuk_3",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "경강 선상 (먹)",
@@ -494,8 +494,8 @@
     {
       "path": "cards/t3_heuk_4",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 대상단",
       "title": "해주 먹 상단 (먹)",
@@ -504,8 +504,8 @@
     {
       "path": "cards/t1_cheong",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 장터 (색마다 1장)",
       "title": "장터 청자 (사기 행상, 옹기전, 물레 공방, 가마터 일꾼, 흙 캐는 집, 장독대 집, 그릇 수리공)",
@@ -514,8 +514,8 @@
     {
       "path": "cards/t1_jeok",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 장터 (색마다 1장)",
       "title": "장터 비단 (포목 행상, 염색집, 누에 치는 집, 바느질 집, 댕기 장수, 베틀 집, 뽕나무 밭)",
@@ -524,8 +524,8 @@
     {
       "path": "cards/t1_hwang",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 장터 (색마다 1장)",
       "title": "장터 인삼 (약초꾼, 심마니, 약재 행상, 인삼 밭, 장터 약방, 꿀 장수, 감초 말리는 집)",
@@ -534,8 +534,8 @@
     {
       "path": "cards/t1_baek",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 장터 (색마다 1장)",
       "title": "장터 한지 (닥나무 밭, 종이 뜨는 집, 책쾌, 부채 장수, 연 장수, 지물 행상, 창호지 집)",
@@ -544,8 +544,8 @@
     {
       "path": "cards/t1_heuk",
       "size": [
-        64,
-        48
+        384,
+        288
       ],
       "group": "카드 · 장터 (색마다 1장)",
       "title": "장터 먹 (숯 굽는 집, 먹 장수, 붓 장수, 벼루 행상, 서당 앞 문방구, 그을음 모으는 집, 장터 대장간)",
@@ -554,204 +554,204 @@
     {
       "path": "backs/t1",
       "size": [
-        72,
-        100
+        360,
+        500
       ],
       "group": "카드 뒷면",
       "title": "장터 뒷면",
-      "subject": "the back of a playing card, symmetric traditional Korean dancheong pattern, brown main color, portrait 18:25"
+      "subject": "the back of a playing card, symmetric brush-painted traditional Korean pattern (clouds and dancheong motifs), brown ochre main color, portrait 18:25"
     },
     {
       "path": "backs/t2",
       "size": [
-        72,
-        100
+        360,
+        500
       ],
       "group": "카드 뒷면",
       "title": "공방 뒷면",
-      "subject": "the back of a playing card, symmetric traditional Korean dancheong pattern, purple main color, portrait 18:25"
+      "subject": "the back of a playing card, symmetric brush-painted traditional Korean pattern (clouds and dancheong motifs), plum purple main color, portrait 18:25"
     },
     {
       "path": "backs/t3",
       "size": [
-        72,
-        100
+        360,
+        500
       ],
       "group": "카드 뒷면",
       "title": "대상단 뒷면",
-      "subject": "the back of a playing card, symmetric traditional Korean dancheong pattern, deep blue main color, portrait 18:25"
+      "subject": "the back of a playing card, symmetric brush-painted traditional Korean pattern (clouds and dancheong motifs), indigo blue main color, portrait 18:25"
     },
     {
       "path": "tokens/cheong",
       "size": [
-        32,
-        32
+        256,
+        256
       ],
       "group": "물건 토큰 (위에서 본 동그란 패)",
       "title": "청자",
-      "subject": "a round game token seen from directly above, showing celadon green-blue ceramics, centered, plain background",
+      "subject": "a round game token seen from directly above with celadon green-blue ceramics painted on it, centered, filling the circle, plain background",
       "round": true
     },
     {
       "path": "tokens/jeok",
       "size": [
-        32,
-        32
+        256,
+        256
       ],
       "group": "물건 토큰 (위에서 본 동그란 패)",
       "title": "비단",
-      "subject": "a round game token seen from directly above, showing red silk fabric, centered, plain background",
+      "subject": "a round game token seen from directly above with red silk fabric painted on it, centered, filling the circle, plain background",
       "round": true
     },
     {
       "path": "tokens/hwang",
       "size": [
-        32,
-        32
+        256,
+        256
       ],
       "group": "물건 토큰 (위에서 본 동그란 패)",
       "title": "인삼",
-      "subject": "a round game token seen from directly above, showing golden ginseng roots, centered, plain background",
+      "subject": "a round game token seen from directly above with golden ginseng roots painted on it, centered, filling the circle, plain background",
       "round": true
     },
     {
       "path": "tokens/baek",
       "size": [
-        32,
-        32
+        256,
+        256
       ],
       "group": "물건 토큰 (위에서 본 동그란 패)",
       "title": "한지",
-      "subject": "a round game token seen from directly above, showing white hanji paper, centered, plain background",
+      "subject": "a round game token seen from directly above with white hanji paper painted on it, centered, filling the circle, plain background",
       "round": true
     },
     {
       "path": "tokens/heuk",
       "size": [
-        32,
-        32
+        256,
+        256
       ],
       "group": "물건 토큰 (위에서 본 동그란 패)",
       "title": "먹",
-      "subject": "a round game token seen from directly above, showing black ink sticks and brushes, centered, plain background",
+      "subject": "a round game token seen from directly above with black ink sticks and brushes painted on it, centered, filling the circle, plain background",
       "round": true
     },
     {
       "path": "tokens/yeop",
       "size": [
-        32,
-        32
+        256,
+        256
       ],
       "group": "물건 토큰 (위에서 본 동그란 패)",
       "title": "엽전",
-      "subject": "a round game token seen from directly above, showing bronze coin with a square hole (sangpyeong tongbo), centered, plain background",
+      "subject": "a round game token seen from directly above with bronze coin with a square hole (sangpyeong tongbo) painted on it, centered, filling the circle, plain background",
       "round": true
     },
     {
       "path": "patrons/jang_yeongsil",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "명사 초상",
       "title": "장영실",
-      "subject": "portrait bust of 장영실, a famous Joseon-era historical figure, facing front, plain background"
+      "subject": "portrait bust in the style of a Joseon-era painted portrait, a person in clothing fitting 장영실 (Joseon-era historical figure), facing front, plain background"
     },
     {
       "path": "patrons/heo_jun",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "명사 초상",
       "title": "허준",
-      "subject": "portrait bust of 허준, a famous Joseon-era historical figure, facing front, plain background"
+      "subject": "portrait bust in the style of a Joseon-era painted portrait, a person in clothing fitting 허준 (Joseon-era historical figure), facing front, plain background"
     },
     {
       "path": "patrons/kim_hongdo",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "명사 초상",
       "title": "김홍도",
-      "subject": "portrait bust of 김홍도, a famous Joseon-era historical figure, facing front, plain background"
+      "subject": "portrait bust in the style of a Joseon-era painted portrait, a person in clothing fitting 김홍도 (Joseon-era historical figure), facing front, plain background"
     },
     {
       "path": "patrons/sin_saimdang",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "명사 초상",
       "title": "신사임당",
-      "subject": "portrait bust of 신사임당, a famous Joseon-era historical figure, facing front, plain background"
+      "subject": "portrait bust in the style of a Joseon-era painted portrait, a person in clothing fitting 신사임당 (Joseon-era historical figure), facing front, plain background"
     },
     {
       "path": "patrons/jeong_yakyong",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "명사 초상",
       "title": "정약용",
-      "subject": "portrait bust of 정약용, a famous Joseon-era historical figure, facing front, plain background"
+      "subject": "portrait bust in the style of a Joseon-era painted portrait, a person in clothing fitting 정약용 (Joseon-era historical figure), facing front, plain background"
     },
     {
       "path": "patrons/kim_mandeok",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "명사 초상",
       "title": "김만덕",
-      "subject": "portrait bust of 김만덕, a famous Joseon-era historical figure, facing front, plain background"
+      "subject": "portrait bust in the style of a Joseon-era painted portrait, a person in clothing fitting 김만덕 (Joseon-era historical figure), facing front, plain background"
     },
     {
       "path": "patrons/bak_jiwon",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "명사 초상",
       "title": "박지원",
-      "subject": "portrait bust of 박지원, a famous Joseon-era historical figure, facing front, plain background"
+      "subject": "portrait bust in the style of a Joseon-era painted portrait, a person in clothing fitting 박지원 (Joseon-era historical figure), facing front, plain background"
     },
     {
       "path": "patrons/han_seokbong",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "명사 초상",
       "title": "한석봉",
-      "subject": "portrait bust of 한석봉, a famous Joseon-era historical figure, facing front, plain background"
+      "subject": "portrait bust in the style of a Joseon-era painted portrait, a person in clothing fitting 한석봉 (Joseon-era historical figure), facing front, plain background"
     },
     {
       "path": "patrons/hwang_jini",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "명사 초상",
       "title": "황진이",
-      "subject": "portrait bust of 황진이, a famous Joseon-era historical figure, facing front, plain background"
+      "subject": "portrait bust in the style of a Joseon-era painted portrait, a person in clothing fitting 황진이 (Joseon-era historical figure), facing front, plain background"
     },
     {
       "path": "patrons/an_gyeon",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "명사 초상",
       "title": "안견",
-      "subject": "portrait bust of 안견, a famous Joseon-era historical figure, facing front, plain background"
+      "subject": "portrait bust in the style of a Joseon-era painted portrait, a person in clothing fitting 안견 (Joseon-era historical figure), facing front, plain background"
     },
     {
       "path": "guide/gaekju",
       "size": [
-        64,
-        64
+        256,
+        256
       ],
       "group": "안내 캐릭터",
       "title": "객주 (튜토리얼)",
@@ -760,8 +760,8 @@
     {
       "path": "room/floor",
       "size": [
-        64,
-        64
+        512,
+        512
       ],
       "group": "사랑방 (이어 붙이는 무늬)",
       "title": "장판 바닥",
@@ -771,8 +771,8 @@
     {
       "path": "room/wall",
       "size": [
-        64,
-        64
+        512,
+        512
       ],
       "group": "사랑방 (이어 붙이는 무늬)",
       "title": "창호지 벽",
@@ -782,8 +782,8 @@
     {
       "path": "room/table",
       "size": [
-        64,
-        64
+        512,
+        512
       ],
       "group": "사랑방 (이어 붙이는 무늬)",
       "title": "상 나뭇결",

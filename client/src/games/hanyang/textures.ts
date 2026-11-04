@@ -1,4 +1,4 @@
-// 판 위 그림 텍스처. 글자·숫자는 코드가 쓰고, 그림은 6단계 픽셀 아트가 있으면 넣는다(art.ts). 없으면 코드 그림.
+// 판 위 그림 텍스처. 글자·숫자는 코드가 쓰고, 그림은 6단계 붓 그림(동양풍)이 있으면 넣는다(art.ts). 없으면 코드 그림.
 // 그림이 늦게 불러와지면 해당 텍스처를 다시 그린다.
 import * as THREE from 'three'
 import { COLORS, TIER_NAMES, TOKEN_NAMES, type CardDef, type Cost, type PatronDef, type Tier, type Token } from '@aibg/shared/hanyang'
@@ -48,11 +48,11 @@ onArt(() => {
   images.clear()
 })
 
-/** 도트 그림을 정수 배로 또렷하게 (번지지 않게) */
-function pixelArt(g: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, scale: number) {
-  g.imageSmoothingEnabled = false
-  g.drawImage(img, x, y, img.naturalWidth * scale, img.naturalHeight * scale)
+/** 붓 그림을 부드럽게 줄여 넣는다 */
+function drawArt(g: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
   g.imageSmoothingEnabled = true
+  g.imageSmoothingQuality = 'high'
+  g.drawImage(img, x, y, w, h)
 }
 
 /** 이 카드의 그림: 공방·대상단은 카드마다, 장터는 색마다 (기획서 5장) */
@@ -118,7 +118,7 @@ export function cardFace(c: CardDef): THREE.CanvasTexture {
     g.stroke()
     const art = artImage(cardArtPath(c))
     if (art) {
-      // 그림 카드: 위에 점수·할인색, 가운데 그림(64×48의 3배), 아래 이름·비용
+      // 그림 카드: 위에 점수·할인색, 가운데 그림(4:3), 아래 이름·비용
       g.fillStyle = '#2b2420'
       g.textAlign = 'left'
       g.textBaseline = 'top'
@@ -127,7 +127,7 @@ export function cardFace(c: CardDef): THREE.CanvasTexture {
       coin(g, 222, 30, 22, c.color, '')
       g.fillStyle = '#3a2a1c'
       g.fillRect(29, 59, 198, 150)
-      pixelArt(g, art, 32, 62, 3)
+      drawArt(g, art, 32, 62, 192, 144)
       g.fillStyle = '#2b2420'
       g.textAlign = 'center'
       g.textBaseline = 'middle'
@@ -167,7 +167,7 @@ export function cardBack(tier: Tier): THREE.CanvasTexture {
     g.fill()
     const art = artImage(`backs/t${tier}`)
     if (art) {
-      pixelArt(g, art, 20, 29, 3) // 72×100 → 216×300, 가운데
+      drawArt(g, art, 20, 29, 216, 300) // 18:25, 가운데
       return
     }
     g.strokeStyle = '#e8d6a8'
@@ -192,8 +192,8 @@ export function patronFace(p: PatronDef): THREE.CanvasTexture {
     g.stroke()
     const art = artImage(`patrons/${p.id}`)
     if (art) {
-      // 초상(64의 2배) 가운데 위, 점수는 왼쪽 위, 이름·조건은 아래
-      pixelArt(g, art, 64, 10, 2)
+      // 초상은 가운데 위, 점수는 왼쪽 위, 이름·조건은 아래
+      drawArt(g, art, 64, 10, 128, 128)
       g.fillStyle = '#2b2420'
       g.textAlign = 'left'
       g.textBaseline = 'top'
@@ -227,7 +227,7 @@ export function coinFace(t: Token): THREE.CanvasTexture {
     g.fillStyle = TOKEN_COLORS[t]
     g.fillRect(0, 0, 128, 128)
     const art = artImage(`tokens/${t}`)
-    if (art) pixelArt(g, art, 0, 0, 4)
+    if (art) drawArt(g, art, 0, 0, 128, 128)
   })
 }
 
