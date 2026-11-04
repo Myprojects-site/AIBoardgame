@@ -121,3 +121,19 @@ button.tok { padding: 4px 10px; font-size: 13px; }
 .banner.on { opacity: 1; transform: translate(-50%, 0); }
 .reactbar { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 4px; }
 .reactbar .react { font-size: 16px; padding: 2px 8px; background: rgba(255,250,240,0.92); }
+
+/* 내 살림 막대, 산 카드 펼쳐 보기, 자유 시점 */
+.mybar { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  justify-content: center; max-width: calc(100% - 440px); background: rgba(255,250,240,0.93); padding: 5px 10px; border-radius: 10px; font-size: 13px; }
+.mybar:empty { display: none; }
+.mine { border-radius: 8px; padding: 1px 8px; color: #fff; border: 1px solid rgba(0,0,0,0.25); white-space: nowrap; }
+.mine.tok-hwang, .mine.tok-baek { color: var(--ink); }
+.mine small { font-size: 11px; margin-left: 2px; opacity: 0.9; }
+@media (max-width: 1100px) { .mybar { max-width: none; bottom: 46px; } }
+.gallery { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; background: #fffaf0; border: 1px solid var(--line);
+  border-radius: 12px; padding: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.45); max-width: calc(100% - 32px); z-index: 6; }
+.gallery.on { display: block; }
+.gallery-head { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.gallery-cards { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.gallery-cards img { width: 128px; height: auto; border-radius: 8px; flex: none; }
+.table3d.free .table-canvas { cursor: grab; }

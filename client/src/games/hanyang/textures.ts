@@ -104,6 +104,14 @@ export function cardFace(c: CardDef): THREE.CanvasTexture {
   })
 }
 
+/** 펼쳐 보기 창에 쓰는 카드 그림 (3D와 같은 그림) */
+const images = new Map<string, string>()
+export function cardImage(c: CardDef): string {
+  let url = images.get(c.id)
+  if (!url) images.set(c.id, (url = (cardFace(c).image as HTMLCanvasElement).toDataURL()))
+  return url
+}
+
 export function cardBack(tier: Tier): THREE.CanvasTexture {
   return texture(`back:${tier}`, 256, 358, (g) => {
     g.fillStyle = ['', '#6b4e2e', '#5a3a5e', '#2e4a5e'][tier]!

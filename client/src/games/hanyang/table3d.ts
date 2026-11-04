@@ -2,6 +2,7 @@
 // 사랑방 낮은 상에 둘러앉는다. 나는 늘 앞자리, 카메라는 내 자리 뒤에서 상을 내려다본다.
 // 같이 하는 느낌(3.3장): 다른 사람 손·보는 중, 토큰·카드가 날아가는 움직임, 반응·채팅 말풍선, 신분 연출, 소리.
 import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { RANKS, type Rank } from '@aibg/shared/core/rank'
 import {
   COLORS,
@@ -25,7 +26,7 @@ import { button, h, sameAction } from '../../ui/dom.ts'
 import type { BoardCtx } from '../registry.ts'
 import { statusLine, turnPrompt } from './board.ts'
 import { COIN, avatarHeadY, makeAvatar, makeCoin } from './models.ts'
-import { CARD_H, CARD_W, cardBack, cardFace, handTexture, labelTexture, patronFace } from './textures.ts'
+import { CARD_H, CARD_W, cardBack, cardFace, cardImage, handTexture, labelTexture, patronFace } from './textures.ts'
 
 // 배치 (월드 단위). 상 윗면 높이 top.
 const L = {
@@ -72,6 +73,7 @@ type Pick =
   | { kind: 'market'; tier: Tier; slot: number }
   | { kind: 'deck'; tier: Tier }
   | { kind: 'reserved'; index: number }
+  | { kind: 'pile'; player: string; color: Color } // 산 카드 더미 → 눌러서 펼쳐 보기
 
 const pickKey = (p: Pick) => JSON.stringify(p)
 
@@ -181,6 +183,8 @@ export class HanyangTable {
   private hud: HTMLElement
   private popup: HTMLElement
   private banner: HTMLElement
+  private gallery: HTMLElement
+  private mybar: HTMLElement
   private hoverKey: string | null = null
   private picked: Color[] = []
   private pickedTurn = ''
@@ -205,6 +209,12 @@ export class HanyangTable {
   private prevRanks: Record<string, Rank> = {}
   private prevCurrent: string | null = null
   private lastChatAt = 0
+  // 자유 시점: 왼쪽 끌기 = 돌리기, 오른쪽 끌기 = 옮기기, 휠 = 확대
+  private controls: OrbitControls
+  private free = false
+  private freeBtn: HTMLButtonElement
+  private downAt = { x: 0, y: 0 }
+  private dragged = false
 
   constructor(onTextMode: () => void) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -215,15 +225,20 @@ export class HanyangTable {
     this.hud = h('div', { class: 'hud' })
     this.popup = h('div', { class: 'popup' })
     this.banner = h('div', { class: 'banner' })
+    this.gallery = h('div', { class: 'gallery', id: 'gallery' })
+    this.mybar = h('div', { class: 'mybar', id: 'mybar' })
     this.root = h(
       'div',
       { class: 'table3d' },
       canvas,
       this.hud,
       this.banner,
+      this.mybar,
       this.popup,
+      this.gallery,
       h('div', { class: 'reactbar' }, ...REACTIONS.map((e) => button(e, () => this.ctx?.react(e), { class: 'small react', title: '반응' }))),
       h('div', { class: 'viewbtns' },
+        (this.freeBtn = button('자유 시점 (F)', () => this.setFree(!this.free), { class: 'small' }) as HTMLButtonElement),
         button('위에서 보기 (V)', () => this.toggleTop(), { class: 'small' }),
         button('글자 판', onTextMode, { class: 'small' })),
     )
@@ -237,19 +252,41 @@ export class HanyangTable {
       this.sendPresence(null, null, true)
     })
     canvas.addEventListener('click', (e) => this.onClick(e))
+    this.controls = new OrbitControls(this.camera, canvas)
+    this.controls.enabled = false
+    this.controls.enableDamping = true
+    this.controls.minDistance = 5
+    this.controls.maxDistance = 38
+    this.controls.maxPolarAngle = Math.PI * 0.4 // 너무 눕히면 카드가 서로 가려 누르기 어렵다
+    // 끌어서 돌린 것은 누른 것으로 치지 않는다
+    canvas.addEventListener('pointerdown', (e) => {
+      this.downAt = { x: e.clientX, y: e.clientY }
+      this.dragged = false
+    })
+    canvas.addEventListener('pointermove', (e) => {
+      if (e.buttons && Math.hypot(e.clientX - this.downAt.x, e.clientY - this.downAt.y) > 6) this.dragged = true
+    })
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault())
     canvas.addEventListener('wheel', (e) => {
+      if (this.free) return // 자유 시점은 OrbitControls가 확대한다
       e.preventDefault()
       this.zoom = THREE.MathUtils.clamp(this.zoom * (e.deltaY > 0 ? 1.08 : 0.92), 0.6, 1.4)
       this.placeCamera()
     }, { passive: false })
     window.addEventListener('keydown', (e) => {
-      if ((e.key === 'v' || e.key === 'V') && this.root.isConnected && !(e.target instanceof HTMLInputElement)) this.toggleTop()
-      if (e.key === 'Escape') this.closePopup()
+      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
+      if ((e.key === 'v' || e.key === 'V') && this.root.isConnected && !typing) this.toggleTop()
+      if ((e.key === 'f' || e.key === 'F') && this.root.isConnected && !typing) this.setFree(!this.free)
+      if (e.key === 'Escape') {
+        this.closePopup()
+        this.closeGallery()
+      }
     })
     onEphemeral((m) => this.onEphemeral(m))
     this.renderer.setAnimationLoop((time) => {
       if (!this.root.isConnected) return
       this.tick(time)
+      if (this.free) this.controls.update()
       this.renderer.render(this.scene, this.camera)
     })
   }
@@ -309,7 +346,8 @@ export class HanyangTable {
 
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80).rotateX(-Math.PI / 2), mat.floor)
     this.scene.add(floor)
-    for (const [x, z, ry] of [[0, -22, 0], [-26, 0, Math.PI / 2], [26, 0, -Math.PI / 2]] as const) {
+    // 네 벽 (자유 시점으로 돌아봐도 방 안)
+    for (const [x, z, ry] of [[0, -22, 0], [0, 22, Math.PI], [-26, 0, Math.PI / 2], [26, 0, -Math.PI / 2]] as const) {
       const wall = new THREE.Mesh(new THREE.PlaneGeometry(60, 14), mat.wall)
       wall.position.set(x, 7, z)
       wall.rotation.y = ry
@@ -335,11 +373,27 @@ export class HanyangTable {
   }
 
   private toggleTop() {
+    if (this.free) this.setFree(false)
     this.topView = !this.topView
     this.placeCamera()
   }
 
+  private setFree(on: boolean) {
+    this.free = on
+    this.controls.enabled = on
+    this.freeBtn.textContent = on ? '원래 시점으로 (F)' : '자유 시점 (F)'
+    this.root.classList.toggle('free', on)
+    if (on) {
+      this.topView = false
+      this.controls.target.set(0, L.top, 0.9)
+      this.controls.update()
+    } else {
+      this.placeCamera()
+    }
+  }
+
   private placeCamera() {
+    if (this.free) return
     const narrow = this.camera.aspect < 1.2 ? 1.25 : 1 // 세로로 긴 화면은 조금 멀리
     const d = this.zoom * narrow
     if (this.topView) {
@@ -501,6 +555,11 @@ export class HanyangTable {
       const s = this.coinStack(p.id, t, p.tokens[t])
       s.position.set(-3.6 + i * 0.75, 0, 0.85)
       if (!p.tokens[t]) s.visible = false
+      else {
+        const n = label(String(p.tokens[t]), 1.0)
+        n.position.set(0, 0.35 + p.tokens[t] * COIN.h, 0)
+        s.add(n)
+      }
       area.add(s)
     })
     // 산 카드: 색마다 한 더미
@@ -516,6 +575,13 @@ export class HanyangTable {
         this.cardObjs.set(def.id, m)
       })
       pile.position.set(-3.6 + i * 1.1, L.cardT / 2, -0.45)
+      const pick: Pick = { kind: 'pile', player: p.id, color: c }
+      pile.userData.pick = pick
+      pile.userData.baseY = pile.position.y
+      this.pickObjs.set(pickKey(pick), pile)
+      const n = label(`${cards.length}장`, 1.5)
+      n.position.set(0, 0.45 + cards.length * L.cardT, -0.25 - cards.length * 0.12)
+      pile.add(n)
       area.add(pile)
     })
     // 찜한 카드
@@ -857,11 +923,13 @@ export class HanyangTable {
       case 'reserved':
         return [{ label: '사기', action: { type: 'buyReserved', index: p.index } }]
       case 'supply':
+      case 'pile':
         return []
     }
   }
 
   private usable(p: Pick): boolean {
+    if (p.kind === 'pile') return true
     if (p.kind === 'supply') return this.canPick() && (this.ctx!.room.game as HanyangView).supply[p.token] > 0
     return this.actionsFor(p).some((a) => this.can(a.action))
   }
@@ -891,10 +959,19 @@ export class HanyangTable {
   }
 
   private onClick(e: MouseEvent) {
+    if (this.dragged) return
     this.ray(e)
     const hit = this.hit()
-    if (!hit) return this.closePopup()
+    if (!hit) {
+      this.closeGallery()
+      return this.closePopup()
+    }
     const p = hit.pick
+    if (p.kind === 'pile') {
+      this.closePopup()
+      this.openGallery(p.player, p.color)
+      return
+    }
     if (p.kind === 'supply') {
       this.closePopup()
       if (!this.usable(p)) return
@@ -935,8 +1012,51 @@ export class HanyangTable {
     this.popup.classList.remove('on')
   }
 
+  /** 산 카드 더미를 펼쳐 본다: 그 색 카드 전부와 할인 수 */
+  private openGallery(player: string, color: Color) {
+    const g = this.ctx!.room.game as HanyangView
+    const p = g.players.find((x) => x.id === player)
+    if (!p) return
+    const cards = bonusOf(p)[color]
+    const who = player === this.ctx!.me ? '내' : `${this.ctx!.nameOf(player)}님의`
+    const points = cards.reduce((s, c) => s + c.points, 0)
+    this.gallery.replaceChildren(
+      h('div', { class: 'gallery-head' },
+        h('b', {}, `${who} ${TOKEN_NAMES[color]} 카드 ${cards.length}장`),
+        h('span', { class: `tok tok-${color}` }, `${TOKEN_NAMES[color]} 할인 +${cards.length}`),
+        points ? h('span', {}, ` · 점수 ${points}점`) : '',
+        h('span', { class: 'spacer' }),
+        button('닫기', () => this.closeGallery(), { class: 'small' })),
+      h('div', { class: 'gallery-cards' }, ...cards.map((c) => h('img', { src: cardImage(c), alt: c.name, title: c.name }))),
+    )
+    this.gallery.classList.add('on')
+  }
+
+  private closeGallery() {
+    this.gallery.classList.remove('on')
+  }
+
+  private drawMyBar(g: HanyangView) {
+    const me = g.players.find((p) => p.id === this.ctx!.me)
+    if (!me) {
+      this.mybar.replaceChildren()
+      return
+    }
+    const bonus = bonusOf(me)
+    const total = TOKENS.reduce((s, t) => s + me.tokens[t], 0)
+    this.mybar.replaceChildren(
+      h('b', {}, '내 살림'),
+      ...COLORS.map((c) =>
+        h('span', { class: `mine tok-${c}`, title: `${TOKEN_NAMES[c]}: 물건 ${me.tokens[c]}개 + 할인 ${bonus[c].length} = ${me.tokens[c] + bonus[c].length}` },
+          h('b', {}, TOKEN_NAMES[c]), ` ${me.tokens[c]}`, h('small', {}, `+${bonus[c].length}`))),
+      h('span', { class: 'mine tok-yeop', title: '엽전: 어떤 물건으로도 낼 수 있다' }, h('b', {}, '엽전'), ` ${me.tokens.yeop}`),
+      h('span', { class: 'muted' }, `물건 ${total}/10 · 앞 숫자 = 물건, +숫자 = 할인`),
+    )
+  }
+
   private drawHud(g: HanyangView) {
     const ctx = this.ctx!
+    this.drawMyBar(g)
     const take3 = { type: 'take3', colors: COLORS.filter((c) => this.picked.includes(c)) } as HanyangAction
     const take2 = this.picked.length === 1 ? ({ type: 'take2', color: this.picked[0]! } as HanyangAction) : null
     const picking = this.canPick()

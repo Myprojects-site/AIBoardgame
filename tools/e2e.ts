@@ -246,6 +246,49 @@ async function main() {
     await solo.waitForFunction(() => (globalThis as any).__aibg.view?.phase === 'over', undefined, { timeout: 180_000 })
     const sv = await view(solo)
     log('AI와 바로 하기: 한 판 끝', sv.result.ranking.map((r: any) => `${r.place}등 ${r.player.startsWith('bot:') ? 'AI' : '나'} ${r.score}점`).join(', '))
+
+    // 내 살림 막대와 산 카드 펼쳐 보기
+    const meId = sv.you as string
+    const mine = sv.game.players.find((p: any) => p.id === meId)
+    const counts: Record<string, number> = {}
+    for (const id of mine.cards) {
+      const color = id.split('_')[1]
+      counts[color] = (counts[color] ?? 0) + 1
+    }
+    const [color, n] = Object.entries(counts).sort((x, y) => y[1] - x[1])[0]!
+    const barText = await solo.textContent('#mybar')
+    if (!barText?.includes(`+${n}`)) throw new Error(`내 살림 막대에 할인 +${n}이 없음: ${barText}`)
+    await clickOn(solo, { kind: 'pile', player: meId, color })
+    await solo.waitForSelector('#gallery.on')
+    const shown = await solo.locator('#gallery img').count()
+    if (shown !== n) throw new Error(`펼쳐 보기 카드 수 ${shown} ≠ ${n}`)
+    log(`산 카드 펼쳐 보기: ${color} ${n}장, 내 살림 막대 할인 표시`)
+    if (OUT) await solo.screenshot({ path: `${OUT}/gallery.png` })
+    await solo.keyboard.press('Escape')
+
+    // 자유 시점: F → 끌어서 돌리기 → 그래도 카드 누르기는 된다
+    await solo.keyboard.press('f')
+    await solo.waitForSelector('.table3d.free')
+    const box = (await solo.locator('.table-canvas').boundingBox())!
+    await solo.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await solo.mouse.down()
+    await solo.mouse.move(box.x + box.width / 2 + 160, box.y + box.height / 2, { steps: 12 })
+    await solo.mouse.up()
+    await solo.waitForTimeout(800) // 관성으로 멈출 때까지
+    if (await solo.locator('#gallery.on').count()) throw new Error('끌기를 누르기로 알아들음')
+    await clickOn(solo, { kind: 'pile', player: meId, color })
+    try {
+      await solo.waitForSelector('#gallery.on', { timeout: 5000 })
+    } catch (e) {
+      if (OUT) await solo.screenshot({ path: `${OUT}/free-fail.png` })
+      const popup = await solo.textContent('.popup.on').catch(() => null)
+      throw new Error(`자유 시점 뒤 더미 누르기 실패 (대신 뜬 창: ${popup})`)
+    }
+    log('자유 시점: 끌어서 돌린 뒤에도 카드 누르기 됨')
+    if (OUT) {
+      await solo.keyboard.press('Escape')
+      await solo.screenshot({ path: `${OUT}/free.png` })
+    }
     log('통과')
   } finally {
     await browser.close()
