@@ -118,7 +118,7 @@ async function main() {
     if (OUT) await fp.screenshot({ path: `${OUT}/table-start.png` })
     for (const token of ['cheong', 'jeok', 'hwang']) {
       await clickOn(fp, { kind: 'supply', token })
-      await fp.waitForFunction((t) => [...document.querySelectorAll('.pickbar .tok')].some((e) => e.className.includes(t)), token)
+      await fp.waitForFunction((t) => [...(globalThis as any).document.querySelectorAll('.pickbar .tok')].some((e: any) => e.className.includes(t)), token)
     }
     const firstId = (await view(fp)).you
     await fp.click('.pickbar button:has-text("가져오기")')
