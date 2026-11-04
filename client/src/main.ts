@@ -8,6 +8,7 @@ import { setPhotos } from './photos.ts'
 import { emitEphemeral } from './presence.ts'
 import { h } from './ui/dom.ts'
 import { homeScreen, identityForm } from './ui/home.ts'
+import { aloneTutorial, leaveAloneTutorial } from './games/hanyang/view.ts'
 import { roomScreen } from './ui/room.ts'
 
 const app = document.getElementById('app')!
@@ -111,6 +112,18 @@ function leave() {
   location.hash = ''
 }
 
+function tutorialScreen() {
+  session?.close()
+  session = null
+  view = null
+  const me = loadMe()
+  if (!me) {
+    screen.replaceChildren(identityForm(tutorialScreen))
+    return
+  }
+  screen.replaceChildren(aloneTutorial(me, () => (location.hash = '')))
+}
+
 function home() {
   session?.close()
   session = null
@@ -145,14 +158,17 @@ function home() {
         location.hash = `#/room/${code}`
       },
       join: (code) => (location.hash = `#/room/${code}`),
+      tutorial: () => (location.hash = '#/tutorial'),
       rename: () => screen.replaceChildren(identityForm(home)),
     }),
   )
 }
 
 function route() {
+  leaveAloneTutorial()
   const m = location.hash.match(/^#\/room\/([A-Z0-9]{6})$/)
   if (m) enterRoom(m[1]!)
+  else if (location.hash === '#/tutorial') tutorialScreen()
   else home()
 }
 

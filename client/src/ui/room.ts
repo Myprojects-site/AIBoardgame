@@ -184,6 +184,9 @@ export function roomScreen(ctx: RoomCtx, chatInput: HTMLInputElement): HTMLEleme
       act: (action) => ctx.send({ t: 'act', action }),
       presence: (at, hover) => ctx.send({ t: 'presence', at, hover }),
       react: (emoji) => ctx.send({ t: 'react', emoji }),
+      isHost: ctx.isHost,
+      tutorialDone: () => ctx.send({ t: 'tutorialDone' }),
+      skipTutorial: () => ctx.send({ t: 'tutorialSkipAll' }),
       redraw: ctx.redraw,
     })
     main = h('div', {}, v.phase === 'over' && results(ctx), board)

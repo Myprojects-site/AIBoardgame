@@ -12,6 +12,10 @@ export interface BoardCtx {
   /** 내 손 위치·보는 것 (기획서 3.3장) */
   presence(at: TablePoint | null, hover: string | null): void
   react(emoji: string): void
+  isHost: boolean
+  /** 튜토리얼 (기획서 3.4장): 다 봤다 / 방장이 모두 건너뛰기 */
+  tutorialDone(): void
+  skipTutorial(): void
   redraw(): void
 }
 

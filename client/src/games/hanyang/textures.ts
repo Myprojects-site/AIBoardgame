@@ -216,6 +216,22 @@ export function portraitTexture(photo: string, color: string, king: boolean): TH
   })
 }
 
+/** 튜토리얼 화살표: 아래를 가리키는 붉은 세모 */
+export function arrowTexture(): THREE.CanvasTexture {
+  return texture('arrow', 128, 128, (g) => {
+    g.beginPath()
+    g.moveTo(16, 20)
+    g.lineTo(112, 20)
+    g.lineTo(64, 116)
+    g.closePath()
+    g.fillStyle = '#c0392b'
+    g.fill()
+    g.lineWidth = 8
+    g.strokeStyle = '#fffaf0'
+    g.stroke()
+  })
+}
+
 /** 다른 사람 손: 그 사람 색 동그라미에 손 */
 export function handTexture(color: string): THREE.CanvasTexture {
   return texture(`hand:${color}`, 128, 128, (g) => {

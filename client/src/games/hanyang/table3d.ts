@@ -27,7 +27,7 @@ import { button, h, sameAction } from '../../ui/dom.ts'
 import type { BoardCtx } from '../registry.ts'
 import { statusLine, turnPrompt } from './board.ts'
 import { COIN, PORTRAIT, dieRotation, makeCoin, makeDie, makePortrait } from './models.ts'
-import { CARD_H, CARD_W, cardBack, cardFace, cardImage, handTexture, labelTexture, patronFace } from './textures.ts'
+import { CARD_H, CARD_W, arrowTexture, cardBack, cardFace, cardImage, handTexture, labelTexture, patronFace } from './textures.ts'
 
 // 배치 (월드 단위). 상 윗면 높이 top.
 const L = {
@@ -235,8 +235,19 @@ export class HanyangTable {
   private dice: DieAnim[] = []
   private diceEnd = 0
   private diceBanner = ''
+  // 튜토리얼 안내 (기획서 3.4장): 밝힐 곳, 화살표·고리, 카메라 다가가기
+  private guideFocus: string[] | null = null
+  private guideSlot: HTMLElement
+  private guideMarks: { arrow: THREE.Sprite; ring: THREE.Mesh; at: THREE.Vector3; size: number }[] = []
+  private guideLook = new THREE.Vector3(0, L.top, 0.9)
+  private lights: { hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight } | null = null
+  private tipEl: HTMLElement
+  private tipTimer: ReturnType<typeof setTimeout> | undefined
+  private lastCode = ''
+  /** 물건 하나를 골랐을 때 (게임 중 팁: 같은 물건 2개 조건) */
+  onPickOne: ((color: Color, left: number) => void) | null = null
 
-  constructor(onTextMode: () => void) {
+  constructor(onTextMode: () => void, onTutorial: () => void) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true })
     this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio))
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -260,7 +271,10 @@ export class HanyangTable {
       h('div', { class: 'viewbtns' },
         (this.freeBtn = button('자유 시점 (F)', () => this.setFree(!this.free), { class: 'small' }) as HTMLButtonElement),
         button('위에서 보기 (V)', () => this.toggleTop(), { class: 'small' }),
+        button('튜토리얼', onTutorial, { class: 'small', title: '혼자 다시 보기' }),
         button('글자 판', onTextMode, { class: 'small' })),
+      (this.guideSlot = h('div', { class: 'guide-slot' })),
+      (this.tipEl = h('div', { class: 'tip', id: 'tip' })),
     )
     this.buildRoom()
     this.scene.add(this.dyn, this.fx)
@@ -312,6 +326,15 @@ export class HanyangTable {
   }
 
   update(ctx: BoardCtx): void {
+    // 연습 판 ↔ 실제 판으로 바뀌면 날아가는 움직임 없이 새로 그린다
+    if (ctx.room.code !== this.lastCode) {
+      this.lastCode = ctx.room.code
+      this.built = false
+      this.prevRanks = {}
+      this.lastState = ''
+      this.clearDice() // 실제 판 주사위가 연습 판에 남지 않게
+      this.banner.classList.remove('on')
+    }
     this.ctx = ctx
     const g = ctx.room.game as HanyangView
     const turnKey = `${g.round}:${g.current}:${g.phase}`
@@ -330,6 +353,7 @@ export class HanyangTable {
       if (before) this.animateFrom(before)
       this.announce(ctx)
       this.built = true
+      this.placeGuideMarks()
     }
     this.drawHud(g)
     this.placeCamera()
@@ -341,15 +365,57 @@ export class HanyangTable {
     }
   }
 
+  /** 튜토리얼 안내 켜고 끄기: 밝힐 곳과 안내 창 */
+  setGuide(g: { focus: string[]; panel: HTMLElement } | null): void {
+    const focus = g ? g.focus : null
+    const changed = JSON.stringify(focus) !== JSON.stringify(this.guideFocus)
+    this.guideFocus = focus
+    this.guideSlot.replaceChildren(...(g ? [g.panel] : []))
+    this.root.classList.toggle('guiding', !!g)
+    if (this.lights) {
+      this.lights.hemi.intensity = g ? 0.6 : 1.1
+      this.lights.sun.intensity = g ? 0.9 : 1.6
+    }
+    if (changed) {
+      this.placeGuideMarks()
+      if (!g) this.placeCamera()
+    }
+  }
+
+  /** 게임 중 팁 한 줄 (기획서 4.8장) */
+  showTip(text: string): void {
+    this.tipEl.textContent = `💡 ${text}`
+    this.tipEl.classList.add('on')
+    clearTimeout(this.tipTimer)
+    this.tipTimer = setTimeout(() => this.tipEl.classList.remove('on'), 6000)
+  }
+
   /** 자동 확인(e2e)용: 물건의 화면 좌표 */
   screenOf(p: Pick): { x: number; y: number } | null {
     const o = this.pickObjs.get(pickKey(p))
     if (!o) return null
     const v = new THREE.Vector3()
     o.getWorldPosition(v)
+    this.camera.updateMatrixWorld()
     v.project(this.camera)
     const r = this.renderer.domElement.getBoundingClientRect()
     return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height }
+  }
+
+  /** 자동 확인(e2e)용: 내가 마지막으로 보낸 손 위치 */
+  presenceDebug() {
+    const r = this.renderer.domElement.getBoundingClientRect()
+    return {
+      lastSent: this.lastSent,
+      hover: this.hoverKey,
+      code: this.ctx?.room.code,
+      guide: !!this.guideFocus,
+      moves: this.moveCount,
+      cam: this.camera.position.toArray().map((n) => Math.round(n * 10) / 10),
+      aspect: this.camera.aspect,
+      rect: [r.left, r.top, r.width, r.height].map(Math.round),
+      connected: this.root.isConnected,
+    }
   }
 
   /** 자동 확인(e2e)용: 다른 사람 손·보는 중 */
@@ -366,8 +432,10 @@ export class HanyangTable {
 
   private buildRoom() {
     this.scene.background = new THREE.Color('#2a2420')
-    this.scene.add(new THREE.HemisphereLight('#fff6e0', '#5a4632', 1.1))
+    const hemi = new THREE.HemisphereLight('#fff6e0', '#5a4632', 1.1)
+    this.scene.add(hemi)
     const sun = new THREE.DirectionalLight('#fff1d6', 1.6)
+    this.lights = { hemi, sun }
     sun.position.set(-8, 20, 10) // 창호지 쪽에서 들어오는 빛
     this.scene.add(sun)
 
@@ -421,6 +489,7 @@ export class HanyangTable {
 
   private placeCamera() {
     if (this.free) return
+    if (this.guideMarks.length && !this.topView) return // 안내 중엔 tickGuide가 움직인다
     const narrow = this.camera.aspect < 1.2 ? 1.25 : 1 // 세로로 긴 화면은 조금 멀리
     const d = this.zoom * narrow
     if (this.topView) {
@@ -430,6 +499,8 @@ export class HanyangTable {
       this.camera.position.set(0, 11.5 * d, 11.5 * d)
       this.camera.lookAt(0, L.top, 0.9)
     }
+    // 다음 그리기 전에도 누르기·화면 좌표가 새 카메라로 계산되게 (뒤에 있는 탭은 그리기가 느리다)
+    this.camera.updateMatrixWorld()
   }
 
   // ---- 판 ----
@@ -647,7 +718,8 @@ export class HanyangTable {
     pic.position.y = PORTRAIT.centerY
     av.add(pic)
     const away = !isBot(p.id) && !ctx.room.members.find((m) => m.id === p.id)?.connected
-    const tag = label(`[${rank}] ${ctx.nameOf(p.id)}${away ? ' (자리 비움)' : ''}`, 4.4, color)
+    const tutoring = ctx.room.tutorialPending.includes(p.id) ? ' (튜토리얼 보는 중)' : ''
+    const tag = label(`[${rank}] ${ctx.nameOf(p.id)}${away ? ' (자리 비움)' : ''}${tutoring}`, 4.4, color)
     tag.position.y = PORTRAIT.centerY - PORTRAIT.size / 2 - 0.35 // 사진 아래 (위는 화면 밖으로 잘린다)
     av.add(tag)
     if (g.current === g.players.indexOf(p) && g.phase !== 'over') {
@@ -750,6 +822,7 @@ export class HanyangTable {
   private tick(time: number) {
     const now = performance.now()
     this.tickDice(now)
+    this.tickGuide(now)
     // 날아가는 것들: 포물선
     this.tweens = this.tweens.filter((t) => {
       if (now < t.start) return true
@@ -795,6 +868,70 @@ export class HanyangTable {
       }
     }
     void time
+  }
+
+  private focusPoints(): { at: THREE.Vector3; size: number }[] {
+    const out: { at: THREE.Vector3; size: number }[] = []
+    const world = (o: THREE.Object3D) => o.getWorldPosition(new THREE.Vector3())
+    for (const f of this.guideFocus ?? []) {
+      const [kind, a, b] = f.split(':')
+      const tier = Number(a) as Tier
+      if (kind === 'supply') out.push({ at: new THREE.Vector3(L.supplyX, L.top, L.supplyZ0 + 2.5 * L.supplyStep), size: 3.4 })
+      else if (kind === 'patrons') out.push({ at: new THREE.Vector3(L.patronX0 + 1.5 * L.patronStep, L.top, L.patronZ), size: 2.8 })
+      else if (kind === 'mine' && this.ctx) {
+        const area = this.areas.get(this.ctx.me)
+        if (area) out.push({ at: area.position.clone(), size: 4.2 })
+      } else if (kind === 'deck') {
+        const o = this.deckObjs.get(tier)
+        if (o) out.push({ at: world(o), size: 1.1 })
+      } else if (kind === 'market' && b !== undefined) {
+        const o = this.pickObjs.get(pickKey({ kind: 'market', tier, slot: Number(b) }))
+        if (o) out.push({ at: world(o), size: 1.1 })
+      } else if (kind === 'market') {
+        const mid = (L.marketX[0]! + L.marketX[3]!) / 2
+        out.push({ at: new THREE.Vector3(mid, L.top, L.rowZ[tier]), size: 2.6 })
+      }
+    }
+    return out
+  }
+
+  private placeGuideMarks() {
+    for (const m of this.guideMarks) {
+      this.fx.remove(m.arrow, m.ring)
+      m.arrow.material.dispose()
+      ;(m.ring.material as THREE.Material).dispose()
+    }
+    this.guideMarks = []
+    if (!this.guideFocus) return
+    for (const { at, size } of this.focusPoints()) {
+      const arrow = sprite(arrowTexture(), 1.1, 1)
+      arrow.material = arrow.material.clone()
+      const ring = new THREE.Mesh(geo.ring, new THREE.MeshBasicMaterial({ color: '#ffd76a', transparent: true, opacity: 0.9, depthWrite: false }))
+      ring.scale.setScalar(size)
+      ring.position.set(at.x, L.top + 0.02, at.z)
+      this.fx.add(arrow, ring)
+      this.guideMarks.push({ arrow, ring, at, size })
+    }
+  }
+
+  /** 안내 중: 화살표가 통통 뛰고, 카메라가 밝힌 곳으로 천천히 다가간다 */
+  private tickGuide(now: number) {
+    if (!this.guideMarks.length) return
+    const t = now / 1000
+    for (const m of this.guideMarks) {
+      m.arrow.position.set(m.at.x, L.top + 1.2 + Math.abs(Math.sin(t * 3)) * 0.6, m.at.z)
+      ;(m.ring.material as THREE.MeshBasicMaterial).opacity = 0.55 + Math.sin(t * 4) * 0.35
+    }
+    if (this.free || this.topView) return
+    const c = new THREE.Vector3()
+    for (const m of this.guideMarks) c.add(m.at)
+    c.divideScalar(this.guideMarks.length)
+    const look = new THREE.Vector3(c.x * 0.7, L.top, c.z * 0.7 + 0.6)
+    const want = look.clone().add(new THREE.Vector3(0, 9 * this.zoom, 9 * this.zoom))
+    this.camera.position.lerp(want, 0.05)
+    this.guideLook.lerp(look, 0.05)
+    this.camera.lookAt(this.guideLook)
+    this.camera.updateMatrixWorld()
   }
 
   private rollDice(ctx: BoardCtx) {
@@ -993,6 +1130,7 @@ export class HanyangTable {
   private ray(e: MouseEvent) {
     const r = this.renderer.domElement.getBoundingClientRect()
     const v = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1)
+    this.camera.updateMatrixWorld()
     this.raycaster.setFromCamera(v, this.camera)
   }
 
@@ -1040,7 +1178,9 @@ export class HanyangTable {
     if (key) this.lift(key, true)
   }
 
+  private moveCount = 0
   private onMove(e: PointerEvent) {
+    this.moveCount++
     this.ray(e)
     const hit = this.hit()
     const ok = hit && (this.usable(hit.pick) || hit.pick.kind === 'market' || hit.pick.kind === 'reserved')
@@ -1070,6 +1210,7 @@ export class HanyangTable {
       this.closePopup()
       if (!this.usable(p)) return
       this.picked = this.picked.includes(p.token) ? this.picked.filter((c) => c !== p.token) : [...this.picked, p.token]
+      if (this.picked.length === 1) this.onPickOne?.(p.token, (this.ctx!.room.game as HanyangView).supply[p.token])
       sfx.coin()
       this.update(this.ctx!)
       return
@@ -1156,6 +1297,11 @@ export class HanyangTable {
     const picking = this.canPick()
     this.hud.replaceChildren(
       statusLine(ctx),
+      ctx.room.tutorialPending.length
+        ? h('div', { class: 'prompt' },
+            `튜토리얼 보는 중: ${ctx.room.tutorialPending.map((p) => (p === ctx.me ? '나' : ctx.nameOf(p))).join(', ')} — 다 보면 시작해요`,
+            ctx.isHost && button('모두 건너뛰고 시작', () => ctx.skipTutorial(), { class: 'small' }))
+        : '',
       turnPrompt(ctx) ?? '',
       picking
         ? h('div', { class: 'pickbar' },

@@ -142,3 +142,21 @@ button.tok { padding: 4px 10px; font-size: 13px; }
 .photo { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; vertical-align: middle; border: 2px solid var(--line); }
 .photo.big { width: 72px; height: 72px; border-width: 3px; }
 .col { display: flex; flex-direction: column; gap: 4px; }
+
+/* 튜토리얼 (5단계) */
+.guide-slot { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(640px, calc(100% - 24px)); z-index: 4; }
+.guide-slot:empty { display: none; }
+.guide-panel { display: flex; gap: 12px; align-items: flex-start; background: #fffaf0; border: 2px solid #8a5a2b; border-radius: 12px;
+  padding: 10px 12px; box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+.guide-panel .grow { flex: 1; }
+.guide-say { font-weight: 600; color: #6b3f1d; }
+.guide-text { font-size: 14px; }
+.guide-try { color: var(--accent); font-weight: 700; }
+.guide-msg { background: #fde3dc; border-radius: 6px; padding: 4px 8px; }
+.dots { letter-spacing: 2px; color: #8a5a2b; }
+.table3d.guiding .mybar, .table3d.guiding .reactbar { display: none; }
+.tip { position: absolute; left: 50%; top: 56px; transform: translateX(-50%); background: #fff3c4; border: 1px solid #e0c060; border-radius: 10px;
+  padding: 6px 14px; font-size: 14px; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 5; }
+.tip.on { opacity: 1; }
+.alone-tutorial { display: flex; flex-direction: column; gap: 8px; }
+.table3d.guiding .viewbtns { display: none; }

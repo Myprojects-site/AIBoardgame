@@ -43,6 +43,7 @@ export interface RoomState {
   seed: number
   players: PlayerId[] // 차례 순서 (게임 시작 때 주사위로 정함)
   dice: DiceRoll[] // 시작 때 굴린 주사위
+  tutorialPending: PlayerId[] // 아직 튜토리얼을 보는 사람. 다 끝나야 첫 차례 (기획서 3.4장)
   game: unknown
   standIn: PlayerId[] // 봇이 대신 두는 사람
   result: GameResult | null
@@ -70,6 +71,8 @@ export type ClientMsg =
   | { t: 'chat'; text: string }
   | { t: 'standIn'; player: PlayerId; on: boolean }
   | { t: 'again' }
+  | { t: 'tutorialDone' } // 다 봤거나 건너뜀
+  | { t: 'tutorialSkipAll' } // 방장: 모두 건너뛰고 시작
 
 export interface RoomView {
   code: string
@@ -89,6 +92,7 @@ export interface RoomView {
   standIn: PlayerId[]
   turnStartedAt: number
   dice: DiceRoll[]
+  tutorialPending: PlayerId[]
   actions: number // 지금까지 둔 수. 0이면 막 시작한 판
   now: number
 }

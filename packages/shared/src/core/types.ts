@@ -24,14 +24,20 @@ export interface GameResult {
   reason: string
 }
 
-// 기획서 3.4장. 내용은 5단계(튜토리얼)에서 채운다.
+// 튜토리얼 (기획서 3.4장): 연습 판에서 단계마다 보여 주고, 몇 단계는 직접 해 본다.
+// 연습 판은 나와 안내 캐릭터(id 'guide') 둘이 앉고, 내가 선.
+export const TUTORIAL_GUIDE = 'guide'
+
 export interface TutorialStep {
-  board: string
-  focus: string[]
-  camera?: string
-  text: string
-  guide?: string
-  waitFor?: unknown
+  id: string
+  title: string
+  text: string // {target} 자리에 목표 점수
+  guide: string // 안내 캐릭터 말
+  focus: string[] // 밝힐 곳. 게임 판이 알아듣는 이름 (한양 상단: supply, patrons, mine, market:단계, market:단계:칸, deck:단계)
+  board?: string // 이 단계에 들어갈 때 연습 판을 이렇게 꾸민다 (규칙 모듈 tutorialBoard)
+  waitFor?: string // 이 종류 행동을 해야 다음으로 (예: 'take3')
+  hint?: string // 다른 행동을 했을 때
+  after?: string // 해 보고 나서 안내 캐릭터 말
 }
 
 export class IllegalAction extends Error {}
@@ -42,6 +48,8 @@ export interface GameRules<State, Action, View> {
   players: { min: number; max: number }
   options: OptionSpec[]
   tutorial: TutorialStep[]
+  /** 튜토리얼 연습 판 꾸미기 (TutorialStep.board 이름마다) */
+  tutorialBoard?(board: string, state: State, me: PlayerId): State
   /** players는 차례 순서. 맨 앞 사람이 먼저 둔다 (방이 주사위로 정해서 넘긴다) */
   setup(players: PlayerId[], seed: number, options: Options): State
   currentPlayer(state: State): PlayerId | null

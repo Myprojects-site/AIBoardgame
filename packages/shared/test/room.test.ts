@@ -130,7 +130,7 @@ test('판정: 차례가 아닌 사람, 구경꾼, 틀린 행동은 거부하고 
 
 test('끝까지: 봇 섞어 한 판, 결과와 1등은 왕, 다시 하기로 대기실', () => {
   const t = setup()
-  t.host.receive('host', { t: 'settings', settings: { seats: 4, fillBots: true, options: { target: 16 } } })
+  t.host.receive('host', { t: 'settings', settings: { seats: 4, fillBots: true, tutorial: false, options: { target: 16 } } })
   t.host.receive('host', { t: 'sit', seat: 0 })
   t.host.receive('b', { t: 'sit', seat: 2 })
   t.host.receive('host', { t: 'start' })
@@ -147,7 +147,7 @@ test('끝까지: 봇 섞어 한 판, 결과와 1등은 왕, 다시 하기로 대
 
 test('자리 비움: 끊기면 표시, 방장이 봇 대신 두기, 돌아오면 돌려받음', () => {
   const t = setup()
-  t.host.receive('host', { t: 'settings', settings: { seats: 2 } })
+  t.host.receive('host', { t: 'settings', settings: { seats: 2, tutorial: false } })
   t.host.receive('host', { t: 'sit', seat: 0 })
   t.host.receive('b', { t: 'sit', seat: 1 })
   t.host.receive('host', { t: 'start' })
@@ -267,6 +267,48 @@ test('프로필 사진: 작은 그림만 받고, 방 화면에는 빼고, 들어
   // 사진을 지우고 다시 들어오면 빠진다
   t.host.receive('c', { t: 'hello', id: 'c', name: 'c', color: '#fff', photo: null })
   assert.deepEqual(photos('b').photos, {})
+})
+
+test('튜토리얼: 사람마다 다 볼 때까지 첫 차례를 막고, 끝나면 시작', () => {
+  const t = setup()
+  t.host.receive('host', { t: 'settings', settings: { seats: 3, fillBots: true } }) // 튜토리얼 기본 켜짐
+  t.host.receive('host', { t: 'sit', seat: 0 })
+  t.host.receive('b', { t: 'sit', seat: 1 })
+  t.host.receive('host', { t: 'start' })
+  assert.deepEqual([...t.host.room.tutorialPending].sort(), ['b', 'host']) // AI는 안 봄
+  assert.equal(t.host.botTurn(), false)
+  const cur = t.last('host').current!
+  if (cur !== 'bot:1') {
+    t.host.receive(cur, { t: 'act', action: t.last(cur).legal[0] })
+    assert.ok(t.errors(cur).some((e) => e.includes('튜토리얼')))
+  }
+  t.host.receive('c', { t: 'tutorialDone' }) // 구경꾼은 상관없음
+  t.host.receive('b', { t: 'tutorialDone' })
+  assert.deepEqual(t.last('b').tutorialPending, ['host'])
+  t.host.receive('host', { t: 'tutorialDone' })
+  assert.deepEqual(t.host.room.tutorialPending, [])
+  assert.ok(t.last('b').chat.some((c) => c.text.includes('모두 준비')))
+  const now = t.last('host').current!
+  if (now === 'bot:1') assert.equal(t.host.botTurn(), true)
+  else {
+    t.host.receive(now, { t: 'act', action: t.last(now).legal[0] })
+    assert.equal(t.host.room.actions, 1)
+  }
+})
+
+test('튜토리얼: 방장만 모두 건너뛰기, 보던 사람이 나가면 기다리지 않음', () => {
+  const t = setup()
+  t.host.receive('host', { t: 'settings', settings: { seats: 3 } })
+  t.host.receive('host', { t: 'sit', seat: 0 })
+  t.host.receive('b', { t: 'sit', seat: 1 })
+  t.host.receive('c', { t: 'sit', seat: 2 })
+  t.host.receive('host', { t: 'start' })
+  t.host.receive('b', { t: 'tutorialSkipAll' })
+  assert.ok(t.errors('b').includes('방장만 할 수 있어요'))
+  t.host.disconnect('c')
+  assert.deepEqual([...t.host.room.tutorialPending].sort(), ['b', 'host'])
+  t.host.receive('host', { t: 'tutorialSkipAll' })
+  assert.deepEqual(t.host.room.tutorialPending, [])
 })
 
 test('채팅: 앞뒤 공백 정리, 길이 제한, 50줄만 보관', () => {

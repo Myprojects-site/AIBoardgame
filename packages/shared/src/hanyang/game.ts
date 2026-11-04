@@ -2,6 +2,7 @@
 import type { GameRules } from '../core/types.ts'
 import { chooseAction } from './bot.ts'
 import { RULES } from './constants.ts'
+import { HANYANG_TUTORIAL, hanyangTutorialBoard } from './tutorial.ts'
 import { TARGET_OPTION, activePlayer, apply, legalActions, pointsOf, result, setup, view } from './rules.ts'
 import type { HanyangAction, HanyangState, HanyangView } from './types.ts'
 
@@ -10,7 +11,8 @@ export const hanyang: GameRules<HanyangState, HanyangAction, HanyangView> = {
   name: '한양 상단',
   players: { min: RULES.minPlayers, max: RULES.maxPlayers },
   options: [TARGET_OPTION],
-  tutorial: [],
+  tutorial: HANYANG_TUTORIAL,
+  tutorialBoard: hanyangTutorialBoard,
   setup,
   currentPlayer: (s) => (s.phase === 'over' ? null : activePlayer(s).id),
   legalActions,

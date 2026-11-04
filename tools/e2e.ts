@@ -31,6 +31,13 @@ async function waitForServer() {
 
 const view = (p: Page) => p.evaluate(() => (globalThis as any).__aibg.view)
 
+async function clickOn(p: Page, pick: unknown) {
+  const pos = await p.evaluate((k) => (globalThis as any).__aibgTable.screenOf(k), pick)
+  if (!pos) throw new Error(`3D에서 못 찾음: ${JSON.stringify(pick)}`)
+  await p.mouse.move(pos.x, pos.y)
+  await p.mouse.click(pos.x, pos.y)
+}
+
 async function enterName(p: Page, name: string) {
   await p.fill('#name', name)
   await p.click('form button[type=submit]')
@@ -131,29 +138,63 @@ async function main() {
     if (OUT) await b!.screenshot({ path: `${OUT}/dice.png` })
     await b!.waitForFunction(() => ((globalThis as any).document.querySelector('.banner.on')?.textContent ?? '').includes('차례:'), undefined, { timeout: 5000 })
     const dv = await view(b!)
-    const lastRoll = (p: string) => dv.dice.find((d: any) => d.player === p).rolls.at(-1)
+    // 첫 눈부터 차례로 비교 (같은 눈끼리만 다시 굴렸으니 앞 눈이 높으면 그걸로 끝)
+    const rolls = (p: string): number[] => dv.dice.find((d: any) => d.player === p).rolls
+    const rollsFirst = (x: number[], y: number[]) => {
+      for (let k = 0; k < Math.min(x.length, y.length); k++) if (x[k] !== y[k]) return x[k]! > y[k]!
+      return true
+    }
     for (let k = 1; k < dv.players.length; k++) {
-      if (lastRoll(dv.players[k - 1]) < lastRoll(dv.players[k])) throw new Error('주사위 높은 순서가 아님')
+      if (!rollsFirst(rolls(dv.players[k - 1]), rolls(dv.players[k]))) throw new Error(`주사위 높은 순서가 아님: ${JSON.stringify(dv.dice)}`)
     }
     if (dv.current !== dv.players[0]) throw new Error('주사위 1등이 선이 아님')
     log('주사위:', dv.dice.map((d: any) => d.rolls.join('→')).join(', '), '/ 순서 알림 뜸')
 
-    // 첫 차례는 3D 테이블을 마우스로: 물건 더미 세 개를 눌러 고르고 가져오기
     const pages = [a!, b!, c!]
     const ids = await Promise.all(pages.map(async (p) => (await view(p)).you as string))
     const pageOf = async () => pages[ids.indexOf((await view(a!)).current)]!
-    const clickOn = async (p: Page, pick: unknown) => {
-      const pos = await p.evaluate((k) => (globalThis as any).__aibgTable.screenOf(k), pick)
-      if (!pos) throw new Error(`3D에서 못 찾음: ${JSON.stringify(pick)}`)
-      await p.mouse.move(pos.x, pos.y)
-      await p.mouse.click(pos.x, pos.y)
-    }
+
+    // 튜토리얼 (기획서 3.4장): 주사위 뒤에 모두에게. 둘째는 끝까지 직접, 방장·셋째는 건너뛰기
+    await Promise.all(pages.map((p) => p.waitForSelector('#guide-panel', { timeout: 15_000 })))
+    if (OUT) await b!.screenshot({ path: `${OUT}/tutorial-1.png` })
+    const guide = (p: Page, label: string) => p.click(`#guide-panel button:has-text("${label}")`)
+    await guide(b!, '다음')
+    await b!.waitForTimeout(1500) // 카메라가 밝힌 곳으로 다가갈 때까지
+    for (const token of ['cheong', 'jeok', 'hwang']) await clickOn(b!, { kind: 'supply', token })
+    await b!.click('.pickbar button:has-text("가져오기")')
+    await b!.waitForSelector('#guide-panel button:has-text("다음"):not([disabled])')
+    if (OUT) await b!.screenshot({ path: `${OUT}/tutorial-2.png` })
+    await guide(b!, '다음')
+    await b!.waitForTimeout(1500)
+    await clickOn(b!, { kind: 'market', tier: 1, slot: 0 })
+    await b!.click('.popup button:has-text("사기")')
+    await b!.waitForSelector('#guide-panel button:has-text("다음"):not([disabled])')
+    await guide(b!, '다음')
+    await guide(b!, '다음')
+    await b!.waitForSelector('#guide-panel button:has-text("시작하기")')
+    if (OUT) await b!.screenshot({ path: `${OUT}/tutorial-5.png` })
+    await guide(b!, '시작하기')
+    await a!.waitForFunction((id) => !(globalThis as any).__aibg.view.tutorialPending.includes(id), ids[1])
+    log('튜토리얼: 둘째가 5단계를 직접 해 보며 끝냄')
+    await guide(a!, '건너뛰기')
+    await guide(c!, '건너뛰기')
+    await a!.waitForFunction(() => (globalThis as any).__aibg.view.tutorialPending.length === 0)
+    if (await a!.locator('#guide-panel').count()) throw new Error('튜토리얼이 안 닫힘')
+    log('튜토리얼: 방장·셋째 건너뜀 → 모두 준비, 시작')
+
+    // 첫 차례는 3D 테이블을 마우스로: 물건 더미 세 개를 눌러 고르고 가져오기
     let fp = await pageOf()
     await fp.waitForSelector('.table3d canvas')
     if (OUT) await fp.screenshot({ path: `${OUT}/table-start.png` })
     for (const token of ['cheong', 'jeok', 'hwang']) {
       await clickOn(fp, { kind: 'supply', token })
-      await fp.waitForFunction((t) => [...(globalThis as any).document.querySelectorAll('.pickbar .tok')].some((e: any) => e.className.includes(t)), token)
+      await fp
+        .waitForFunction((t) => [...(globalThis as any).document.querySelectorAll('.pickbar .tok')].some((e: any) => e.className.includes(t)), token, { timeout: 10_000 })
+        .catch(async (e) => {
+          if (OUT) await fp.screenshot({ path: `${OUT}/pick-fail.png` })
+          const hud = await fp.textContent('.hud')
+          throw new Error(`물건 고르기 안 됨 (${token}) HUD="${hud}" ${e.message}`)
+        })
     }
     const firstId = (await view(fp)).you
     await fp.click('.pickbar button:has-text("가져오기")')
@@ -185,10 +226,22 @@ async function main() {
     const pos = await a!.evaluate((k) => (globalThis as any).__aibgTable.screenOf(k), hoverPick)
     await a!.mouse.move(pos.x - 5, pos.y - 5)
     await a!.mouse.move(pos.x, pos.y, { steps: 4 })
-    await b!.waitForFunction(
-      ([id, key]) => (globalThis as any).__aibgTable.othersDebug().others.some((o: any) => o.id === id && o.hand && o.hover === key && o.ring),
-      [aId, JSON.stringify(hoverPick)] as const,
-    )
+    await b!
+      .waitForFunction(
+        ([id, key]) => (globalThis as any).__aibgTable.othersDebug().others.some((o: any) => o.id === id && o.hand && o.hover === key && o.ring),
+        [aId, JSON.stringify(hoverPick)] as const,
+        { timeout: 15_000 },
+      )
+      .catch(async (e) => {
+        const seen = await b!.evaluate(() => (globalThis as any).__aibgTable.othersDebug())
+        const aSide = await a!.evaluate((pt) => {
+          const d = (globalThis as any).document
+          const el = d.elementFromPoint(pt.x, pt.y)
+          return { ...(globalThis as any).__aibgTable.presenceDebug(), under: el ? `${el.tagName}.${el.className}` : null, pos: pt }
+        }, pos)
+        if (OUT) await a!.screenshot({ path: `${OUT}/presence-fail-a.png` })
+        throw new Error(`손·보는 중 안 뜸. 둘째가 본 것=${JSON.stringify(seen)} 방장 쪽=${JSON.stringify(aSide)} ${e.message}`)
+      })
     log('손·보는 중: 방장 손이 둘째 화면 카드 위에 보임')
     if (OUT) await b!.screenshot({ path: `${OUT}/presence.png` })
 
@@ -203,6 +256,11 @@ async function main() {
     log('움직임: 토큰·카드가 날아감')
     if (OUT) await b!.screenshot({ path: `${OUT}/flying.png` })
     await a!.waitForFunction(() => (globalThis as any).__aibg.view.game.round >= 6, undefined, { timeout: 120_000 })
+    const tipB = await b!.textContent('#tip')
+    const tipC = await c!.textContent('#tip')
+    if (!tipB?.includes('💡')) throw new Error('튜토리얼을 본 둘째에게 팁이 안 뜸')
+    if (tipC?.includes('💡')) throw new Error(`건너뛴 셋째에게 팁이 뜸: ${tipC}`)
+    log('게임 중 팁: 둘째만', tipB)
     log('6바퀴 진행, 방장 새로고침')
     const before = (await view(a!)).game
     await a!.reload()
@@ -270,12 +328,19 @@ async function main() {
     solo.setDefaultTimeout(TIMEOUT)
     await solo.goto(BASE)
     await enterName(solo, '혼자')
+    await solo.click('#open-tutorial')
+    await solo.waitForSelector('#guide-panel')
+    await solo.click('#guide-panel button:has-text("건너뛰기")')
+    await solo.waitForSelector('#create-room')
+    log('첫 화면 튜토리얼: 열고 건너뛰면 첫 화면으로')
     await solo.click('#practice button[data-seats="2"]')
     await solo.waitForFunction(() => {
       const v = (globalThis as any).__aibg.view
       return v?.phase === 'playing' && v.players.length === 2 && v.players.some((p: string) => p.startsWith('bot:')) // 차례는 주사위라 AI가 선일 수도
     }, undefined, { timeout: 5000 })
     await solo.waitForSelector('.table3d canvas')
+    await solo.waitForSelector('#guide-panel', { timeout: 15_000 })
+    await solo.click('#guide-panel button:has-text("건너뛰기")')
     await autoplay(solo)
     await solo.waitForFunction(() => (globalThis as any).__aibg.view?.phase === 'over', undefined, { timeout: 180_000 })
     const sv = await view(solo)

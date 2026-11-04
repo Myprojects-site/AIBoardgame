@@ -63,6 +63,7 @@ export function createRoom(code: string, host: Omit<Member, 'connected'>, settin
     seed: 0,
     players: [],
     dice: [],
+    tutorialPending: [],
     game: null,
     standIn: [],
     result: null,
@@ -124,11 +125,14 @@ export class RoomHost {
     const m = this.member(id)
     if (!m || !m.connected) return
     m.connected = false
+    // 나간 사람을 튜토리얼 끝날 때까지 기다리면 판이 멈춘다
+    if (this.room.tutorialPending?.includes(id)) this.finishTutorial(id)
     this.changed()
   }
 
   /** 지금 봇이 둘 차례인가 (빈자리 봇, 또는 봇이 대신 두는 사람) */
   botTurn(): boolean {
+    if (this.room.tutorialPending?.length) return false // 튜토리얼이 끝나야 첫 차례
     const cur = this.current()
     return !!cur && (isBot(cur) || this.room.standIn.includes(cur))
   }
@@ -189,6 +193,7 @@ export class RoomHost {
       standIn: r.standIn,
       turnStartedAt: r.turnStartedAt,
       dice: r.dice ?? [],
+      tutorialPending: r.tutorialPending ?? [],
       actions: r.actions,
       now: this.io.now(),
     }
@@ -280,8 +285,22 @@ export class RoomHost {
         this.requirePhase('lobby')
         this.start()
         break
+      case 'tutorialDone':
+        this.requirePhase('playing')
+        this.finishTutorial(from)
+        break
+      case 'tutorialSkipAll':
+        this.requireHost(from)
+        this.requirePhase('playing')
+        if (r.tutorialPending.length) {
+          r.tutorialPending = []
+          this.system('방장이 튜토리얼을 건너뛰고 시작했어요')
+          r.turnStartedAt = this.io.now()
+        }
+        break
       case 'act':
         this.requirePhase('playing')
+        if (r.tutorialPending?.length) throw new RoomError('모두 튜토리얼을 마치면 시작해요')
         if (!r.players.includes(from)) throw new RoomError('구경꾼은 둘 수 없어요')
         this.applyAction(from, msg.action)
         // 대신 두던 봇이 있었으면 본인이 돌아온 것
@@ -308,6 +327,7 @@ export class RoomHost {
         r.game = null
         r.players = []
         r.dice = []
+        r.tutorialPending = []
         r.standIn = []
         r.result = null
         r.seats = r.seats.map((id) => (id && isBot(id) ? null : id))
@@ -340,6 +360,16 @@ export class RoomHost {
     if (r.members.length >= ROOM.maxMembers) throw new RoomError('방이 꽉 찼어요')
     r.members.push({ id: from, name, color: msg.color, connected: true, photo })
     if (from !== r.hostId) this.system(`${name}님이 들어왔어요`)
+  }
+
+  private finishTutorial(player: PlayerId): void {
+    const r = this.room
+    if (!r.tutorialPending?.includes(player)) return
+    r.tutorialPending = r.tutorialPending.filter((p) => p !== player)
+    if (!r.tutorialPending.length) {
+      r.turnStartedAt = this.io.now()
+      this.system('모두 준비됐어요. 시작!')
+    }
   }
 
   private applySettings(patch: Partial<RoomSettings>): void {
@@ -379,6 +409,8 @@ export class RoomHost {
     const { order, dice } = rollTurnOrder(r.seats as string[], this.io.random)
     r.players = order
     r.dice = dice
+    // 튜토리얼을 켠 방이면 사람마다 다 볼 때까지 기다린다 (AI는 안 봄)
+    r.tutorialPending = r.settings.tutorial ? order.filter((p) => !isBot(p)) : []
     r.seed = Math.floor(this.io.random() * 2 ** 31)
     r.game = rules.setup(r.players, r.seed, r.settings.options)
     r.phase = 'playing'
