@@ -5,6 +5,8 @@ import { spawn } from 'node:child_process'
 import { chromium, type Page } from 'playwright-core'
 
 const PORT = 4173
+// 스크린샷을 남길 폴더 (없으면 안 찍음): npm run e2e -- <폴더>
+const OUT = process.argv[2]
 const BASE = `http://localhost:${PORT}/`
 const TIMEOUT = 60_000
 
@@ -101,15 +103,42 @@ async function main() {
     await Promise.all([a!, b!, c!].map((p) => p.waitForFunction(() => (globalThis as any).__aibg.view?.phase === 'playing')))
     log('게임 시작')
 
-    // 첫 차례는 화면 버튼으로: 물건 세 개 골라 가져오기
-    const first = (await view(a!)).current as string
+    // 첫 차례는 3D 테이블을 마우스로: 물건 더미 세 개를 눌러 고르고 가져오기
     const pages = [a!, b!, c!]
     const ids = await Promise.all(pages.map(async (p) => (await view(p)).you as string))
-    const fp = pages[ids.indexOf(first)]!
-    for (const color of ['cheong', 'jeok', 'hwang']) await fp.click(`button[data-take="${color}"]`)
-    await fp.click('button:has-text("고른 3개 가져오기")')
-    await a!.waitForFunction((f) => (globalThis as any).__aibg.view.current !== f, first)
-    log('화면 버튼으로 첫 차례 둠')
+    const pageOf = async () => pages[ids.indexOf((await view(a!)).current)]!
+    const clickOn = async (p: Page, pick: unknown) => {
+      const pos = await p.evaluate((k) => (globalThis as any).__aibgTable.screenOf(k), pick)
+      if (!pos) throw new Error(`3D에서 못 찾음: ${JSON.stringify(pick)}`)
+      await p.mouse.move(pos.x, pos.y)
+      await p.mouse.click(pos.x, pos.y)
+    }
+    let fp = await pageOf()
+    await fp.waitForSelector('.table3d canvas')
+    if (OUT) await fp.screenshot({ path: `${OUT}/table-start.png` })
+    for (const token of ['cheong', 'jeok', 'hwang']) {
+      await clickOn(fp, { kind: 'supply', token })
+      await fp.waitForFunction((t) => [...document.querySelectorAll('.pickbar .tok')].some((e) => e.className.includes(t)), token)
+    }
+    const firstId = (await view(fp)).you
+    await fp.click('.pickbar button:has-text("가져오기")')
+    await a!.waitForFunction((f) => (globalThis as any).__aibg.view.current !== f, firstId)
+    log('3D: 물건 세 개 눌러 가져옴')
+
+    // 다음 사람: 거래처 카드를 눌러 뜬 창에서 찜하기
+    fp = await pageOf()
+    const who = (await view(fp)).you
+    await clickOn(fp, { kind: 'market', tier: 2, slot: 1 })
+    await fp.waitForSelector('.popup.on')
+    await fp.click('.popup button:has-text("찜하기")')
+    await fp.waitForFunction((w) => (globalThis as any).__aibg.view.game.players.find((p: any) => p.id === w).reserved.length === 1, who)
+    log('3D: 카드 눌러 찜함')
+    if (OUT) {
+      await fp.screenshot({ path: `${OUT}/table-reserved.png` })
+      await fp.keyboard.press('v')
+      await fp.screenshot({ path: `${OUT}/table-top.png` })
+      await fp.keyboard.press('v')
+    }
 
     // 숨긴 정보: 다른 사람 화면에서 더미 순서는 숫자뿐
     const bv = await view(b!)

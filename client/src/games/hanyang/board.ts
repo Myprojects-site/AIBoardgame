@@ -1,4 +1,4 @@
-// 한양 상단 글자 판 (2단계 확인용). 3단계에서 3D 테이블로 바뀐다.
+// 한양 상단 글자 판. 3D 테이블이 기본이고, 글자 판은 버튼으로 바꿔 볼 수 있다(WebGL이 안 되는 기기도).
 import {
   COLORS,
   TIERS,
@@ -47,7 +47,7 @@ function cardBox(c: CardDef, buttons: HTMLElement[]) {
   )
 }
 
-export function hanyangBoard(ctx: BoardCtx): HTMLElement {
+export function textBoard(ctx: BoardCtx): HTMLElement {
   const g = ctx.room.game as HanyangView
   const legal = ctx.room.legal as HanyangAction[]
   const can = (a: HanyangAction) => legal.some((l) => sameAction(l, a))
@@ -154,23 +154,12 @@ export function hanyangBoard(ctx: BoardCtx): HTMLElement {
     }),
   )
 
-  // 행동 뒤 정리 단계
-  let prompt: HTMLElement | null = null
-  if (myTurn && g.phase === 'discard' && me) {
-    prompt = h('div', { class: 'prompt' }, '물건은 10개까지예요. 되돌려 놓을 물건을 고르세요: ',
-      ...TOKENS.filter((t) => me.tokens[t]).map((t) => button(`${TOKEN_NAMES[t]} 1개`, () => act({ type: 'discard', token: t }), { class: 'small' })))
-  } else if (myTurn && g.phase === 'patron') {
-    prompt = h('div', { class: 'prompt' }, '명사 여러 명이 찾아왔어요. 한 명을 고르세요: ',
-      ...g.patronChoices.map((id) => button(`${patron(id).name} ${patron(id).points}점`, () => act({ type: 'patron', id }), { class: 'small' })))
-  } else if (myTurn && legal.length === 1 && legal[0]!.type === 'pass') {
-    prompt = h('div', { class: 'prompt' }, '할 수 있는 게 없어요. ', button('넘기기', () => act({ type: 'pass' }), { class: 'small' }))
-  }
+  const prompt = turnPrompt(ctx)
 
   return h(
     'div',
     { class: 'board' },
-    h('div', { class: 'status' }, `목표 ${g.target}점 · ${g.round}바퀴째 · `, ctx.room.current ? h('span', {}, '차례: ', ctx.label(ctx.room.current)) : '',
-      myTurn ? h('b', { class: 'myturn' }, ' — 내 차례!') : ''),
+    statusLine(ctx),
     prompt,
     h('h3', {}, '물건'),
     supply,
@@ -181,4 +170,31 @@ export function hanyangBoard(ctx: BoardCtx): HTMLElement {
     h('h3', {}, '상단'),
     players,
   )
+}
+
+export function statusLine(ctx: BoardCtx): HTMLElement {
+  const g = ctx.room.game as HanyangView
+  const myTurn = ctx.room.current === ctx.me && ctx.room.legal.length > 0
+  return h('div', { class: 'status' }, `목표 ${g.target}점 · ${g.round}바퀴째 · `, ctx.room.current ? h('span', {}, '차례: ', ctx.label(ctx.room.current)) : '',
+    myTurn ? h('b', { class: 'myturn' }, ' — 내 차례!') : '')
+}
+
+/** 행동 뒤 정리 단계(되돌리기, 명사 고르기)와 넘기기 */
+export function turnPrompt(ctx: BoardCtx): HTMLElement | null {
+  const g = ctx.room.game as HanyangView
+  const legal = ctx.room.legal as HanyangAction[]
+  const act = (a: HanyangAction) => ctx.act(a)
+  const me = g.players.find((p) => p.id === ctx.me)
+  const myTurn = ctx.room.current === ctx.me && legal.length > 0
+  let prompt: HTMLElement | null = null
+  if (myTurn && g.phase === 'discard' && me) {
+    prompt = h('div', { class: 'prompt' }, '물건은 10개까지예요. 되돌려 놓을 물건을 고르세요: ',
+      ...TOKENS.filter((t) => me.tokens[t]).map((t) => button(`${TOKEN_NAMES[t]} 1개`, () => act({ type: 'discard', token: t }), { class: 'small' })))
+  } else if (myTurn && g.phase === 'patron') {
+    prompt = h('div', { class: 'prompt' }, '명사 여러 명이 찾아왔어요. 한 명을 고르세요: ',
+      ...g.patronChoices.map((id) => button(`${patron(id).name} ${patron(id).points}점`, () => act({ type: 'patron', id }), { class: 'small' })))
+  } else if (myTurn && legal.length === 1 && legal[0]!.type === 'pass') {
+    prompt = h('div', { class: 'prompt' }, '할 수 있는 게 없어요. ', button('넘기기', () => act({ type: 'pass' }), { class: 'small' }))
+  }
+  return prompt
 }

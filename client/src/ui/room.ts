@@ -173,6 +173,8 @@ export function roomScreen(ctx: RoomCtx, chatInput: HTMLInputElement): HTMLEleme
       room: v,
       me: v.you,
       label: (id) => label(v, id),
+      nameOf: (id) => nameOf(v, id),
+      colorOf: (id) => v.members.find((m) => m.id === id)?.color ?? '#8a8a8a',
       act: (action) => ctx.send({ t: 'act', action }),
       redraw: ctx.redraw,
     })
