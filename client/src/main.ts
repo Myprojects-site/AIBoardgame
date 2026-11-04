@@ -1,4 +1,6 @@
 import './style.css'
+import { choiceAllowed } from '@aibg/shared/core/types'
+import { GAMES } from '@aibg/shared/games'
 import { createRoom, defaultSettings, newRoomCode, resumeRoom, type RoomSettings, type RoomState, type RoomView } from '@aibg/shared/room'
 import { hostKey, load, loadMe, store, forget, type Me } from './identity.ts'
 import { guestSession, hostSession, type NetStatus, type Session, type SessionEvents } from './net/session.ts'
@@ -18,6 +20,7 @@ const chatInput = h('input', { id: 'chat-input', maxlength: 200, placeholder: '�
 
 let session: Session | null = null
 let view: RoomView | null = null
+let autoStart: string | null = null // AI와 바로 하기로 만든 방 코드
 
 const STATUS_TEXT: Record<NetStatus, string> = {
   connecting: '연결하는 중…',
@@ -64,6 +67,7 @@ function events(me: Me): SessionEvents {
       store(hostKey(room.code), room)
       session?.close()
       session = hostSession(resumeRoom(room, me.id), me, events(me))
+      draw()
       showToast('방장이 되었어요')
     },
   }
@@ -80,6 +84,10 @@ function enterRoom(code: string) {
   screen.replaceChildren(h('div', { class: 'card narrow' }, `방 ${code}에 들어가는 중…`))
   const saved = load<RoomState>(hostKey(code))
   session = saved && saved.hostId === me.id ? hostSession(resumeRoom(saved, me.id), me, events(me)) : guestSession(code, me, events(me))
+  // 방장은 만들자마자 첫 방 화면을 받는데, 그때는 session이 아직 비어 있어 못 그렸다 → 여기서 그린다
+  draw()
+  if (autoStart === code && session.isHost) session.send({ t: 'start' })
+  autoStart = null
 }
 
 function leave() {
@@ -114,6 +122,21 @@ function home() {
         const code = newRoomCode()
         const settings = load<RoomSettings>('lastSettings') ?? defaultSettings()
         store(hostKey(code), createRoom(code, me, settings))
+        location.hash = `#/room/${code}`
+      },
+      practice(seats) {
+        // AI와 바로 하기: 나는 첫 자리, 나머지는 AI, 들어가자마자 시작
+        const code = newRoomCode()
+        const base = load<RoomSettings>('lastSettings') ?? defaultSettings()
+        const settings: RoomSettings = { ...defaultSettings(base.game), seats, fillBots: true, spectators: false }
+        for (const spec of GAMES[settings.game]!.options) {
+          const v = base.options[spec.id]
+          if (v !== undefined && choiceAllowed(spec, v, seats)) settings.options[spec.id] = v
+        }
+        const room = createRoom(code, me, settings)
+        room.seats[0] = me.id
+        store(hostKey(code), room)
+        autoStart = code
         location.hash = `#/room/${code}`
       },
       join: (code) => (location.hash = `#/room/${code}`),

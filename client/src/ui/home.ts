@@ -42,7 +42,7 @@ export function identityForm(onDone: (me: Me) => void, note?: string): HTMLEleme
   )
 }
 
-export function homeScreen(me: Me, actions: { create(): void; join(code: string): void; rename(): void }): HTMLElement {
+export function homeScreen(me: Me, actions: { create(): void; practice(seats: number): void; join(code: string): void; rename(): void }): HTMLElement {
   const code = h('input', { id: 'join-code', maxlength: ROOM.codeLength, placeholder: '방 코드 6자리' }) as HTMLInputElement
   const join = (e: Event) => {
     e.preventDefault()
@@ -57,5 +57,10 @@ export function homeScreen(me: Me, actions: { create(): void; join(code: string)
     h('button', { class: 'primary', id: 'create-room', onclick: () => actions.create() }, '방 만들기'),
     h('form', { class: 'row', onsubmit: join }, code, h('button', { type: 'submit' }, '들어가기')),
     h('p', { class: 'muted' }, '친구가 보낸 초대 링크를 열어도 바로 들어가요.'),
+    h('hr', {}),
+    h('b', {}, 'AI와 바로 하기'),
+    h('p', { class: 'muted small' }, '혼자 연습하거나 시험해 볼 때. 나머지 자리는 AI가 앉아요.'),
+    h('div', { class: 'row', id: 'practice' },
+      ...[2, 3, 4].map((n) => h('button', { 'data-seats': n, onclick: () => actions.practice(n) }, `${n}인 (AI ${n - 1}명)`))),
   )
 }

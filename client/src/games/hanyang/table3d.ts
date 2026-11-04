@@ -718,13 +718,18 @@ export class HanyangTable {
     const room = ctx.room
     if (this.built) {
       if (room.current === ctx.me && this.prevCurrent !== ctx.me) sfx.turn()
+      // 한꺼번에 여럿 오를 수 있다(끝나는 순간 등) → 알림 띠는 가장 높은 신분 하나만
+      let top: { p: string; rank: Rank } | null = null
       for (const [p, rank] of Object.entries(room.ranks)) {
         const before = this.prevRanks[p]
         if (!before || RANKS.indexOf(rank) <= RANKS.indexOf(before)) continue
-        const who = p === ctx.me ? '내가' : `${ctx.nameOf(p)}님이`
-        this.showBanner(rank === '왕' ? `👑 ${who} 왕이 되었다!` : `${who} ${rank}이 되었다!`)
         this.bubble(p, `✨ ${rank} ✨`, FX.bubbleMs, 2.4)
-        if (rank === '왕') sfx.king()
+        if (!top || RANKS.indexOf(rank) > RANKS.indexOf(top.rank)) top = { p, rank }
+      }
+      if (top) {
+        const who = top.p === ctx.me ? '내가' : `${ctx.nameOf(top.p)}님이`
+        this.showBanner(top.rank === '왕' ? `👑 ${who} 왕이 되었다!` : `${who} ${top.rank}이 되었다!`)
+        if (top.rank === '왕') sfx.king()
         else sfx.rankUp()
       }
       for (const line of room.chat) {

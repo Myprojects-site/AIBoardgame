@@ -17,7 +17,7 @@ export interface RoomCtx {
 const TURN_LIMIT_LABEL: Record<number, string> = { 0: '없음', 60: '1분', 120: '2분', 180: '3분' }
 
 function nameOf(v: RoomView, id: string): string {
-  if (isBot(id)) return `봇 ${id.slice(BOT_PREFIX.length)}`
+  if (isBot(id)) return `AI ${id.slice(BOT_PREFIX.length)}`
   return v.members.find((m) => m.id === id)?.name ?? '?'
 }
 
@@ -33,14 +33,14 @@ function label(v: RoomView, id: string): HTMLElement {
     nameOf(v, id),
     id === v.hostId ? ' 👑' : '',
     m && !m.connected ? ' (연결 끊김)' : '',
-    v.standIn.includes(id) ? ' (봇이 대신)' : '',
+    v.standIn.includes(id) ? ' (AI가 대신)' : '',
   )
 }
 
 function settingsSummary(s: RoomSettings): string {
   const rules = GAMES[s.game]!
   const opts = rules.options.map((o) => o.choices.find((c) => c.value === s.options[o.id])?.label ?? '').join(' · ')
-  return [rules.name, `${s.seats}인`, opts, s.tutorial ? '튜토리얼' : '', s.fillBots ? '빈자리 봇' : '',
+  return [rules.name, `${s.seats}인`, opts, s.tutorial ? '튜토리얼' : '', s.fillBots ? '빈자리 AI' : '',
     s.turnLimit ? `차례 ${TURN_LIMIT_LABEL[s.turnLimit]}` : '', s.spectators ? '' : '구경꾼 안 받음']
     .filter(Boolean)
     .join(' · ')
@@ -73,7 +73,7 @@ function settingsForm(ctx: RoomCtx): HTMLElement {
         })), (v) => set({ options: { [o.id]: Number.isNaN(Number(v)) ? v : Number(v) } }))),
     ),
     check('set-tutorial', s.tutorial, '튜토리얼 보여 주기', (v) => set({ tutorial: v })),
-    check('set-bots', s.fillBots, '빈자리 봇으로 채우기', (v) => set({ fillBots: v })),
+    check('set-bots', s.fillBots, '빈자리 AI로 채우기', (v) => set({ fillBots: v })),
     h('label', {}, '차례 시간 제한 ',
       select('set-turn', s.turnLimit, TURN_LIMITS.map((t) => ({ value: t, label: TURN_LIMIT_LABEL[t]! })), (v) => set({ turnLimit: Number(v) as RoomSettings['turnLimit'] }))),
     check('set-spectators', s.spectators, '구경꾼 받기', (v) => set({ spectators: v })),
@@ -95,7 +95,7 @@ function lobby(ctx: RoomCtx): HTMLElement {
       { class: 'seats' },
       ...v.seats.map((id, i) =>
         h('li', {},
-          id ? label(v, id) : h('span', { class: 'muted' }, v.settings.fillBots ? '빈자리 (봇)' : '빈자리'),
+          id ? label(v, id) : h('span', { class: 'muted' }, v.settings.fillBots ? '빈자리 (AI)' : '빈자리'),
           !id && button('앉기', () => ctx.send({ t: 'sit', seat: i }), { class: 'small', title: `${i + 1}번 자리` }),
           i === mySeat && button('일어나기', () => ctx.send({ t: 'stand' }), { class: 'small' })),
       ),
@@ -118,7 +118,7 @@ function sidePanel(ctx: RoomCtx): HTMLElement {
     overTime && v.current && h('p', { class: 'notice' }, '⏰ ', nameOf(v, v.current), `님 차례가 ${TURN_LIMIT_LABEL[v.settings.turnLimit]}을 넘었어요`),
     curAway && h('p', { class: 'notice' }, nameOf(v, v.current!), '님이 2분 넘게 자리를 비웠어요'),
     ctx.isHost && v.phase === 'playing' && v.players.filter((p) => !isBot(p) && p !== v.you).length > 0 &&
-      h('div', { class: 'small' }, h('b', {}, '봇이 대신 두기'),
+      h('div', { class: 'small' }, h('b', {}, 'AI가 대신 두기'),
         ...v.players.filter((p) => !isBot(p) && p !== v.you).map((p) => {
           const on = v.standIn.includes(p)
           return h('div', {}, label(v, p), ' ', button(on ? '그만' : '대신 두기', () => ctx.send({ t: 'standIn', player: p, on: !on }), { class: 'small' }))

@@ -73,7 +73,8 @@ async function main() {
     await a!.goto(BASE)
     await enterName(a!, '방장')
     await a!.click('#create-room')
-    await a!.waitForFunction(() => (globalThis as any).__aibg.view?.code)
+    // 아무도 안 들어와도 방장 화면에 대기실이 바로 떠야 한다 (11/4: "들어가는 중…"에 멈춰 있던 버그)
+    await a!.waitForSelector('.lobby', { timeout: 3000 })
     const code: string = (await view(a!)).code
     log('방 코드', code)
 
@@ -229,6 +230,22 @@ async function main() {
       { timeout: 90_000 },
     )
     log('방장 넘기기: 둘째가 방장, 셋째가 새 방장에게 다시 붙음')
+
+    // AI와 바로 하기: 혼자 들어와 버튼 하나로 AI와 한 판
+    const solo = await (await browser.newContext()).newPage()
+    solo.setDefaultTimeout(TIMEOUT)
+    await solo.goto(BASE)
+    await enterName(solo, '혼자')
+    await solo.click('#practice button[data-seats="2"]')
+    await solo.waitForFunction(() => {
+      const v = (globalThis as any).__aibg.view
+      return v?.phase === 'playing' && v.players.length === 2 && v.players[1].startsWith('bot:')
+    }, undefined, { timeout: 5000 })
+    await solo.waitForSelector('.table3d canvas')
+    await autoplay(solo)
+    await solo.waitForFunction(() => (globalThis as any).__aibg.view?.phase === 'over', undefined, { timeout: 180_000 })
+    const sv = await view(solo)
+    log('AI와 바로 하기: 한 판 끝', sv.result.ranking.map((r: any) => `${r.place}등 ${r.player.startsWith('bot:') ? 'AI' : '나'} ${r.score}점`).join(', '))
     log('통과')
   } finally {
     await browser.close()

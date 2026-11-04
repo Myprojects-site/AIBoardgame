@@ -280,7 +280,7 @@ export class RoomHost {
         if (!r.players.includes(msg.player) || isBot(msg.player)) throw new RoomError('사람 자리가 아니에요')
         r.standIn = r.standIn.filter((p) => p !== msg.player)
         if (msg.on) r.standIn.push(msg.player)
-        this.system(`${this.member(msg.player)?.name ?? msg.player} 자리를 ${msg.on ? '봇이 대신 둬요' : '본인이 다시 둬요'}`)
+        this.system(`${this.member(msg.player)?.name ?? msg.player} 자리를 ${msg.on ? 'AI가 대신 둬요' : '본인이 다시 둬요'}`)
         break
       case 'again':
         this.requireHost(from)
@@ -349,7 +349,7 @@ export class RoomHost {
     const rules = this.rules
     if (!r.seats.some((id) => id)) throw new RoomError('앉은 사람이 없어요')
     if (r.seats.some((id) => !id) && !r.settings.fillBots) {
-      throw new RoomError('빈자리가 있어요. 자리를 채우거나 "빈자리 봇으로 채우기"를 켜 주세요')
+      throw new RoomError('빈자리가 있어요. 자리를 채우거나 "빈자리 AI로 채우기"를 켜 주세요')
     }
     let bot = 0
     r.seats = r.seats.map((id) => id ?? `${BOT_PREFIX}${++bot}`)
