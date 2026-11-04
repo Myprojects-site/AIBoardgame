@@ -2,17 +2,23 @@
 // 나중에 모델 파일(.glb)로 바꿀 때는 이 파일의 함수만 바꾸면 된다 — 테이블 코드는 그대로.
 import * as THREE from 'three'
 import type { Token } from '@aibg/shared/hanyang'
-import { TOKEN_COLORS, dieFace, portraitTexture } from './textures.ts'
+import { TOKEN_COLORS, coinFace, dieFace, portraitTexture } from './textures.ts'
 
 export const COIN = { r: 0.32, h: 0.07 }
 
 const coinGeo = new THREE.CylinderGeometry(COIN.r, COIN.r, COIN.h, 24)
-const coinMats = new Map<Token, THREE.MeshStandardMaterial>()
+// 옆면은 그 색, 윗면·아랫면은 토큰 그림(없으면 그 색)
+const coinMats = new Map<Token, THREE.MeshStandardMaterial[]>()
 
 /** 토큰 한 개. 같은 도형·재질을 함께 쓰므로 버리지 않는다 */
 export function makeCoin(t: Token): THREE.Mesh {
   let m = coinMats.get(t)
-  if (!m) coinMats.set(t, (m = new THREE.MeshStandardMaterial({ color: TOKEN_COLORS[t], roughness: 0.5, metalness: t === 'yeop' ? 0.5 : 0.05 })))
+  if (!m) {
+    const metal = t === 'yeop' ? 0.5 : 0.05
+    const side = new THREE.MeshStandardMaterial({ color: TOKEN_COLORS[t], roughness: 0.5, metalness: metal })
+    const face = new THREE.MeshStandardMaterial({ map: coinFace(t), roughness: 0.5, metalness: metal })
+    coinMats.set(t, (m = [side, face, face]))
+  }
   const mesh = new THREE.Mesh(coinGeo, m)
   mesh.userData.shared = true
   return mesh

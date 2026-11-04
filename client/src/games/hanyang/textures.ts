@@ -1,6 +1,8 @@
-// 회색 상자 단계의 글자 텍스처 (기획서 6장 3단계). 6단계에서 픽셀 아트로 바뀐다.
+// 판 위 그림 텍스처. 글자·숫자는 코드가 쓰고, 그림은 6단계 픽셀 아트가 있으면 넣는다(art.ts). 없으면 코드 그림.
+// 그림이 늦게 불러와지면 해당 텍스처를 다시 그린다.
 import * as THREE from 'three'
 import { COLORS, TIER_NAMES, TOKEN_NAMES, type CardDef, type Cost, type PatronDef, type Tier, type Token } from '@aibg/shared/hanyang'
+import { artImage, onArt } from '../../art.ts'
 
 export const TOKEN_COLORS: Record<Token, string> = {
   cheong: '#3a8f8a',
@@ -15,6 +17,7 @@ const TIER_BG: Record<Tier, string> = { 1: '#efe2c4', 2: '#e6cba6', 3: '#d9b48f'
 const FONT = `'Malgun Gothic', system-ui, sans-serif`
 
 const cache = new Map<string, THREE.CanvasTexture>()
+const drawers = new Map<string, (g: CanvasRenderingContext2D) => void>()
 
 function texture(key: string, w: number, hgt: number, draw: (g: CanvasRenderingContext2D) => void): THREE.CanvasTexture {
   const hit = cache.get(key)
@@ -27,8 +30,33 @@ function texture(key: string, w: number, hgt: number, draw: (g: CanvasRenderingC
   t.colorSpace = THREE.SRGBColorSpace
   t.anisotropy = 4
   cache.set(key, t)
+  drawers.set(key, draw)
   return t
 }
+
+// 그림이 새로 불러와지면 그 그림을 쓰는 텍스처를 다시 그린다
+onArt(() => {
+  for (const [key, t] of cache) {
+    const draw = drawers.get(key)
+    const canvas = t.image as HTMLCanvasElement
+    if (!draw || key.startsWith('label:') || key.startsWith('portrait:')) continue
+    const g = canvas.getContext('2d')!
+    g.clearRect(0, 0, canvas.width, canvas.height)
+    draw(g)
+    t.needsUpdate = true
+  }
+  images.clear()
+})
+
+/** 도트 그림을 정수 배로 또렷하게 (번지지 않게) */
+function pixelArt(g: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, scale: number) {
+  g.imageSmoothingEnabled = false
+  g.drawImage(img, x, y, img.naturalWidth * scale, img.naturalHeight * scale)
+  g.imageSmoothingEnabled = true
+}
+
+/** 이 카드의 그림: 공방·대상단은 카드마다, 장터는 색마다 (기획서 5장) */
+export const cardArtPath = (c: CardDef) => (c.tier === 1 ? `cards/t1_${c.color}` : `cards/${c.id}`)
 
 function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   g.beginPath()
@@ -88,6 +116,26 @@ export function cardFace(c: CardDef): THREE.CanvasTexture {
     g.lineWidth = 6
     g.strokeStyle = '#7a5a3a'
     g.stroke()
+    const art = artImage(cardArtPath(c))
+    if (art) {
+      // 그림 카드: 위에 점수·할인색, 가운데 그림(64×48의 3배), 아래 이름·비용
+      g.fillStyle = '#2b2420'
+      g.textAlign = 'left'
+      g.textBaseline = 'top'
+      g.font = `bold 48px ${FONT}`
+      if (c.points) g.fillText(String(c.points), 18, 6)
+      coin(g, 222, 30, 22, c.color, '')
+      g.fillStyle = '#3a2a1c'
+      g.fillRect(29, 59, 198, 150)
+      pixelArt(g, art, 32, 62, 3)
+      g.fillStyle = '#2b2420'
+      g.textAlign = 'center'
+      g.textBaseline = 'middle'
+      g.font = `bold 28px ${FONT}`
+      wrapCenter(g, c.name, 128, 240, 228, 30)
+      costRow(g, c.cost, 312, 256)
+      return
+    }
     g.fillStyle = '#2b2420'
     g.textAlign = 'left'
     g.textBaseline = 'top'
@@ -117,6 +165,11 @@ export function cardBack(tier: Tier): THREE.CanvasTexture {
     g.fillStyle = ['', '#6b4e2e', '#5a3a5e', '#2e4a5e'][tier]!
     roundRect(g, 0, 0, 256, 358, 18)
     g.fill()
+    const art = artImage(`backs/t${tier}`)
+    if (art) {
+      pixelArt(g, art, 20, 29, 3) // 72×100 → 216×300, 가운데
+      return
+    }
     g.strokeStyle = '#e8d6a8'
     g.lineWidth = 8
     roundRect(g, 16, 16, 224, 326, 12)
@@ -137,6 +190,22 @@ export function patronFace(p: PatronDef): THREE.CanvasTexture {
     g.lineWidth = 6
     g.strokeStyle = '#8e2b1f'
     g.stroke()
+    const art = artImage(`patrons/${p.id}`)
+    if (art) {
+      // 초상(64의 2배) 가운데 위, 점수는 왼쪽 위, 이름·조건은 아래
+      pixelArt(g, art, 64, 10, 2)
+      g.fillStyle = '#2b2420'
+      g.textAlign = 'left'
+      g.textBaseline = 'top'
+      g.font = `bold 44px ${FONT}`
+      g.fillText(String(p.points), 14, 8)
+      g.textAlign = 'center'
+      g.textBaseline = 'middle'
+      g.font = `bold 26px ${FONT}`
+      g.fillText(p.name, 128, 160)
+      costRow(g, p.need, 214, 256)
+      return
+    }
     g.fillStyle = '#2b2420'
     g.textAlign = 'left'
     g.textBaseline = 'top'
@@ -149,6 +218,16 @@ export function patronFace(p: PatronDef): THREE.CanvasTexture {
     g.font = `22px ${FONT}`
     g.fillText('명사 방문', 128, 110)
     costRow(g, p.need, 196, 256)
+  })
+}
+
+/** 토큰 윗면: 그림이 있으면 그림, 없으면 그 색 */
+export function coinFace(t: Token): THREE.CanvasTexture {
+  return texture(`coin:${t}`, 128, 128, (g) => {
+    g.fillStyle = TOKEN_COLORS[t]
+    g.fillRect(0, 0, 128, 128)
+    const art = artImage(`tokens/${t}`)
+    if (art) pixelArt(g, art, 0, 0, 4)
   })
 }
 

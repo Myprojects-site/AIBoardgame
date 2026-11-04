@@ -4,6 +4,7 @@ import { GAMES } from '@aibg/shared/games'
 import { createRoom, defaultSettings, newRoomCode, resumeRoom, type RoomSettings, type RoomState, type RoomView } from '@aibg/shared/room'
 import { hostKey, load, loadMe, store, forget, type Me } from './identity.ts'
 import { guestSession, hostSession, type NetStatus, type Session, type SessionEvents } from './net/session.ts'
+import { artReady } from './art.ts'
 import { setPhotos } from './photos.ts'
 import { emitEphemeral } from './presence.ts'
 import { h } from './ui/dom.ts'
@@ -196,4 +197,5 @@ setInterval(() => {
   },
 }
 
-route()
+// 어떤 그림이 있는지 먼저 알고 시작한다 (없어도 바로 시작)
+void artReady.then(route)

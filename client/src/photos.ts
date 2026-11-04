@@ -1,5 +1,9 @@
 // 프로필 사진: 방에서 받은 사진 묶음을 들고, 고른 사진을 작게 잘라 만든다.
+import { TUTORIAL_GUIDE } from '@aibg/shared/core/types'
 import { ROOM, isBot } from '@aibg/shared/room'
+import { artUrl, hasArt } from './art.ts'
+
+const GUIDE_ART = 'guide/gaekju'
 
 const PHOTO_PX = 96
 const QUALITY = 0.82
@@ -80,5 +84,7 @@ function defaultPhoto(kind: 'person' | 'bot', color: string): string {
 
 /** 이 사람을 보여 줄 사진: 올린 사진, 없으면 기본 사진 */
 export function photoFor(id: string, color: string): string {
+  // 튜토리얼 객주는 그림이 있으면 그 그림 (6단계)
+  if (id === TUTORIAL_GUIDE && hasArt(GUIDE_ART)) return artUrl(GUIDE_ART)
   return getPhoto(id) ?? defaultPhoto(isBot(id) ? 'bot' : 'person', isBot(id) ? '#7d8a96' : color)
 }

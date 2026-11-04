@@ -20,6 +20,7 @@ import {
   type Token,
 } from '@aibg/shared/hanyang'
 import { REACTIONS, isBot, type TablePoint } from '@aibg/shared/room'
+import { artImage, onArt } from '../../art.ts'
 import { photoFor, photosVersion } from '../../photos.ts'
 import { onEphemeral, type Ephemeral } from '../../presence.ts'
 import { sfx } from '../../sound.ts'
@@ -277,6 +278,8 @@ export class HanyangTable {
       (this.tipEl = h('div', { class: 'tip', id: 'tip' })),
     )
     this.buildRoom()
+    this.applyRoomArt()
+    onArt(() => this.applyRoomArt())
     this.scene.add(this.dyn, this.fx)
 
     new ResizeObserver(() => this.resize()).observe(this.root)
@@ -455,6 +458,28 @@ export class HanyangTable {
       const leg = new THREE.Mesh(new THREE.BoxGeometry(0.6, L.top - 0.25, 0.6), mat.tableLeg)
       leg.position.set(sx * (L.tableW / 2 - 0.8), (L.top - 0.25) / 2, sz * (L.tableD / 2 - 0.8))
       this.scene.add(leg)
+    }
+  }
+
+  /** 사랑방 바닥·벽·상: 무늬 그림이 있으면 이어 붙여 깐다 (6단계) */
+  private applyRoomArt() {
+    const tiles: [THREE.MeshStandardMaterial, string, number, number][] = [
+      [mat.floor, 'room/floor', 20, 20],
+      [mat.wall, 'room/wall', 15, 4],
+      [mat.table, 'room/table', 6, 5],
+    ]
+    for (const [m, path, rx, ry] of tiles) {
+      const img = artImage(path)
+      if (!img || m.map) continue
+      const t = new THREE.Texture(img)
+      t.colorSpace = THREE.SRGBColorSpace
+      t.wrapS = t.wrapT = THREE.RepeatWrapping
+      t.repeat.set(rx, ry)
+      t.magFilter = THREE.NearestFilter
+      t.needsUpdate = true
+      m.map = t
+      m.color.set('#ffffff')
+      m.needsUpdate = true
     }
   }
 

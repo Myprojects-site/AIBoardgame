@@ -16,6 +16,8 @@
 - `npm run e2e` — 빌드 뒤, 창 없이 헤드리스 Edge 세 개로 실제 PeerJS 연결 한 판 + 방장 새로고침 + 방장 넘기기. 사용자 화면에 창을 띄우지 않는다
 - `npm run cards` — 카드 표 다시 만들기 (`tools/make_cards.ts` → `data/cards.gen.ts`)
 - `npm run sim -- 300` — 봇 밸런스 시뮬레이션 (기획서 4.6장)
+- `npm run art:list` — 그림 목록 다시 만들기 (`tools/art_spec.json`, `docs/그림_목록.md`). 카드 표를 바꾸면 같이 돌린다
+- `npm run art` — 바나나 프로 원본(`assets_src/`) → 게임 그림(`client/public/art/` + `manifest.json`). Python + Pillow
 
 ## 폴더
 
@@ -36,7 +38,8 @@ client/            Vite 화면
   src/photos.ts    프로필 사진: 받은 사진 묶음, 고른 사진 줄이기, 기본 사진(실루엣·AI 로봇) 그리기
 .github/workflows/ main에 올리면 테스트 → 깃허브 페이지 배포
 tools/             카드 표 생성, 시뮬레이션, 그림 정리
-assets/            최종 그림 / assets_src/ 바나나 프로 원본
+assets_src/        바나나 프로 원본 (그림 목록대로 폴더·파일 이름)
+client/public/art/ 게임용 그림 (npm run art가 만든다, 손으로 고치지 않는다)
 docs/              기획 문서
 ```
 
@@ -73,4 +76,5 @@ docs/              기획 문서
 - 11/4 고친 것: 입장 폼 안 버튼(색 고르기·사진 고르기)이 폼을 제출하던 것 — `button()`은 늘 type=button.
 - 11/4 5단계 만든 것: 튜토리얼(기획서 3.4·4.8장). 방이 사람마다 다 볼 때까지 첫 차례를 막음(`tutorialPending`, 방장 모두 건너뛰기), 연습 판 5단계(객주, 직접 해 보기 2번, 화살표·고리·카메라 다가가기), 게임 중 혼자 다시 보기, 첫 화면 튜토리얼, 게임 중 팁 6가지(튜토리얼 본 사람만). e2e: 둘째가 3D로 끝까지, 나머지 건너뛰기, 팁.
 - 11/4 고친 것: 카메라를 옮긴 뒤 다음 그리기 전까지 누르기·화면 좌표가 옛 카메라로 계산되던 것(뒤에 있는 탭에서 튜토리얼 뒤 손 위치가 안 가던 원인) → 카메라를 옮기면 바로 updateMatrixWorld.
+- 11/4 6단계 준비: 그림 78장 목록·프롬프트(`docs/그림_목록.md`, 게임 데이터에서 생성), 정리 스크립트(`tools/import_art.py`), 화면은 manifest에 있는 그림만 쓰고 없으면 코드 그림(`client/src/art.ts`, 그림이 늦게 오면 텍스처 다시 그림). 시험 그림 78장으로 끝까지 확인(커밋 안 함).
 
