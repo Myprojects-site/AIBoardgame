@@ -17,6 +17,7 @@ export interface SessionEvents {
   error(text: string): void
   status(s: NetStatus, detail?: string): void
   becomeHost(room: RoomState): void
+  ephemeral(msg: Extract<HostMsg, { t: 'presence' | 'react' }>): void
 }
 
 export interface Session {
@@ -38,6 +39,7 @@ export function hostSession(room: RoomState, me: Me, ev: SessionEvents): Session
   const deliver = (msg: HostMsg) => {
     if (msg.t === 'room') ev.view(msg.view)
     else if (msg.t === 'error') ev.error(msg.text)
+    else if (msg.t === 'presence' || msg.t === 'react') ev.ephemeral(msg)
   }
   const host = new RoomHost(room, {
     send: (to, msg) => (to === me.id ? deliver(msg) : conns.get(to)?.send(msg)),
@@ -153,6 +155,7 @@ export function guestSession(code: string, me: Me, ev: SessionEvents): Session {
       if (msg.t === 'room') ev.view(msg.view)
       else if (msg.t === 'error') ev.error(msg.text)
       else if (msg.t === 'becomeHost') ev.becomeHost(msg.room)
+      else if (msg.t === 'presence' || msg.t === 'react') ev.ephemeral(msg)
     })
     c.on('close', () => {
       if (conn === c) retry()
@@ -181,7 +184,7 @@ export function guestSession(code: string, me: Me, ev: SessionEvents): Session {
     isHost: false,
     send(msg) {
       if (conn?.open) conn.send(msg)
-      else ev.error('방장과 연결이 끊겨 있어요. 다시 붙는 중이에요')
+      else if (msg.t !== 'presence') ev.error('방장과 연결이 끊겨 있어요. 다시 붙는 중이에요')
     },
     close() {
       closed = true

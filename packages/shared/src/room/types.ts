@@ -48,8 +48,16 @@ export interface RoomState {
   actions: number
 }
 
+// 같이 하는 느낌 (기획서 3.3장): 저장하지 않고 방장이 바로 다른 사람에게 넘긴다
+export const REACTIONS = ['😂', '😮', '👏', '😭', '👍', '에이~'] as const
+
+/** 상 위의 한 점. 가운데는 모두에게 같은 좌표, 사람 자리 위는 그 자리 기준 좌표 */
+export type TablePoint = { c: [number, number] } | { p: PlayerId; l: [number, number] }
+
 /** 참가자(방장 포함) → 방장 */
 export type ClientMsg =
+  | { t: 'presence'; at: TablePoint | null; hover: string | null }
+  | { t: 'react'; emoji: string }
   | { t: 'hello'; id: string; name: string; color: string }
   | { t: 'sit'; seat: number }
   | { t: 'stand' }
@@ -85,3 +93,5 @@ export type HostMsg =
   | { t: 'room'; view: RoomView }
   | { t: 'error'; text: string }
   | { t: 'becomeHost'; room: RoomState } // 방장 넘기기
+  | { t: 'presence'; from: string; at: TablePoint | null; hover: string | null }
+  | { t: 'react'; from: string; emoji: string }

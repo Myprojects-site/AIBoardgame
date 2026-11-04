@@ -144,6 +144,25 @@ export function patronFace(p: PatronDef): THREE.CanvasTexture {
   })
 }
 
+/** 다른 사람 손: 그 사람 색 동그라미에 손 */
+export function handTexture(color: string): THREE.CanvasTexture {
+  return texture(`hand:${color}`, 128, 128, (g) => {
+    g.beginPath()
+    g.arc(64, 64, 54, 0, Math.PI * 2)
+    g.fillStyle = color
+    g.globalAlpha = 0.85
+    g.fill()
+    g.globalAlpha = 1
+    g.lineWidth = 6
+    g.strokeStyle = '#fff'
+    g.stroke()
+    g.font = `64px ${FONT}`
+    g.textAlign = 'center'
+    g.textBaseline = 'middle'
+    g.fillText('✋', 64, 68)
+  })
+}
+
 /** 머리 위 이름표나 개수처럼 늘 카메라를 보는 글자 */
 export function labelTexture(text: string, color = '#2b2420', bg = 'rgba(255,250,240,0.92)'): THREE.CanvasTexture {
   return texture(`label:${text}:${color}:${bg}`, 512, 96, (g) => {

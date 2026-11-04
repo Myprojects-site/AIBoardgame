@@ -3,6 +3,7 @@ import { choiceAllowed } from '@aibg/shared/core/types'
 import { GAMES } from '@aibg/shared/games'
 import { BOT_PREFIX, ROOM, TURN_LIMITS, isBot, type ClientMsg, type RoomSettings, type RoomView } from '@aibg/shared/room'
 import { BOARDS } from '../games/registry.ts'
+import { isMuted, setMuted } from '../sound.ts'
 import { button, dot, h } from './dom.ts'
 
 export interface RoomCtx {
@@ -164,6 +165,10 @@ export function roomScreen(ctx: RoomCtx, chatInput: HTMLInputElement): HTMLEleme
       navigator.clipboard?.writeText(link).catch(() => {})
     }, { class: 'small', title: link }),
     h('span', { class: 'spacer' }),
+    button(isMuted() ? '🔇 소리 켜기' : '🔊 소리 끄기', () => {
+      setMuted(!isMuted())
+      ctx.redraw()
+    }, { class: 'small', title: '소리' }),
     button(ctx.isHost ? '나가기 (방장 넘기기)' : '나가기', () => ctx.leave(), { class: 'small' }),
   )
   let main: HTMLElement
@@ -176,6 +181,8 @@ export function roomScreen(ctx: RoomCtx, chatInput: HTMLInputElement): HTMLEleme
       nameOf: (id) => nameOf(v, id),
       colorOf: (id) => v.members.find((m) => m.id === id)?.color ?? '#8a8a8a',
       act: (action) => ctx.send({ t: 'act', action }),
+      presence: (at, hover) => ctx.send({ t: 'presence', at, hover }),
+      react: (emoji) => ctx.send({ t: 'react', emoji }),
       redraw: ctx.redraw,
     })
     main = h('div', {}, v.phase === 'over' && results(ctx), board)

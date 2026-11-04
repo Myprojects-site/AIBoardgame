@@ -2,6 +2,7 @@ import './style.css'
 import { createRoom, defaultSettings, newRoomCode, resumeRoom, type RoomSettings, type RoomState, type RoomView } from '@aibg/shared/room'
 import { hostKey, load, loadMe, store, forget, type Me } from './identity.ts'
 import { guestSession, hostSession, type NetStatus, type Session, type SessionEvents } from './net/session.ts'
+import { emitEphemeral } from './presence.ts'
 import { h } from './ui/dom.ts'
 import { homeScreen, identityForm } from './ui/home.ts'
 import { roomScreen } from './ui/room.ts'
@@ -57,6 +58,7 @@ function events(me: Me): SessionEvents {
       statusBar.textContent = STATUS_TEXT[s] + (detail && s === 'failed' ? ` (${detail})` : '')
       statusBar.classList.toggle('on', s !== 'online')
     },
+    ephemeral: emitEphemeral,
     becomeHost(room) {
       // 방장을 넘겨받았다
       store(hostKey(room.code), room)

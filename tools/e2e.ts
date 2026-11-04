@@ -144,7 +144,29 @@ async function main() {
     const bv = await view(b!)
     if (typeof bv.game.decks[1] !== 'number') throw new Error('더미가 가려지지 않음')
 
+    // 같이 하는 느낌: 방장이 카드 위에 마우스를 올리면 둘째 화면에 손과 "보는 중"
+    const aId = (await view(a!)).you
+    const hoverPick = { kind: 'market', tier: 1, slot: 2 }
+    const pos = await a!.evaluate((k) => (globalThis as any).__aibgTable.screenOf(k), hoverPick)
+    await a!.mouse.move(pos.x - 5, pos.y - 5)
+    await a!.mouse.move(pos.x, pos.y, { steps: 4 })
+    await b!.waitForFunction(
+      ([id, key]) => (globalThis as any).__aibgTable.othersDebug().others.some((o: any) => o.id === id && o.hand && o.hover === key && o.ring),
+      [aId, JSON.stringify(hoverPick)] as const,
+    )
+    log('손·보는 중: 방장 손이 둘째 화면 카드 위에 보임')
+    if (OUT) await b!.screenshot({ path: `${OUT}/presence.png` })
+
+    // 반응: 셋째가 👏 → 방장 화면에 말풍선
+    await c!.click('.reactbar button:has-text("👏")')
+    await a!.waitForFunction(() => (globalThis as any).__aibgTable.othersDebug().bubbles > 0)
+    log('반응: 셋째 👏 가 방장 화면에 뜸')
+
     for (const p of pages) await autoplay(p)
+    // 움직임: 누가 두면 다른 화면에서 토큰·카드가 날아간다
+    await b!.waitForFunction(() => (globalThis as any).__aibgTable.othersDebug().flying > 0, undefined, { timeout: 30_000, polling: 20 })
+    log('움직임: 토큰·카드가 날아감')
+    if (OUT) await b!.screenshot({ path: `${OUT}/flying.png` })
     await a!.waitForFunction(() => (globalThis as any).__aibg.view.game.round >= 6, undefined, { timeout: 120_000 })
     log('6바퀴 진행, 방장 새로고침')
     const before = (await view(a!)).game
@@ -187,6 +209,11 @@ async function main() {
     const v = await view(a!)
     log('게임 끝:', v.result.ranking.map((r: any) => `${r.place}등 ${r.score}점 ${v.ranks[r.player]}`).join(', '))
     if (!Object.values(v.ranks).includes('왕')) throw new Error('1등이 왕이 아님')
+    // 신분 연출: 끝나는 순간 왕 알림 (방장은 새로고침해서 앞선 신분 변화를 못 봤을 수 있어 둘째·셋째 중 하나)
+    const banners = await Promise.all([b!, c!].map((p) => p.evaluate(() => (globalThis as any).document.querySelector('.banner')?.textContent ?? '')))
+    if (!banners.some((t) => t.includes('왕'))) throw new Error(`왕 알림이 안 뜸: ${JSON.stringify(banners)}`)
+    log('신분 연출: 왕 알림', banners.find((t) => t.includes('왕')))
+    if (OUT) await b!.screenshot({ path: `${OUT}/over.png` })
 
     // 다시 하기 → 대기실, 방장 넘기기
     await a!.click('button:has-text("다시 하기")')

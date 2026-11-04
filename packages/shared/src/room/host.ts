@@ -4,6 +4,7 @@ import { rankOf, type Rank } from '../core/rank.ts'
 import { choiceAllowed, type PlayerId } from '../core/types.ts'
 import { GAMES, type AnyRules } from '../games.ts'
 import {
+  REACTIONS,
   TURN_LIMITS,
   type ClientMsg,
   type HostMsg,
@@ -98,6 +99,7 @@ export class RoomHost {
   }
 
   receive(from: string, msg: ClientMsg): void {
+    if (msg.t === 'presence' || msg.t === 'react') return this.relay(from, msg)
     try {
       this.handle(from, msg)
     } catch (e) {
@@ -181,6 +183,24 @@ export class RoomHost {
   }
 
   // ---- 안쪽 ----
+
+  /** 손 위치·보는 중·반응: 저장하지 않고 바로 넘긴다. 틀린 값은 조용히 버린다(자주 오는 메시지라). */
+  private relay(from: string, msg: Extract<ClientMsg, { t: 'presence' | 'react' }>): void {
+    const sender = this.member(from)
+    if (!sender?.connected) return
+    if (msg.t === 'react') {
+      if (!(REACTIONS as readonly string[]).includes(msg.emoji)) return
+      for (const m of this.room.members) if (m.connected) this.io.send(m.id, { t: 'react', from, emoji: msg.emoji })
+      return
+    }
+    const finite = (xs: unknown) => Array.isArray(xs) && xs.length === 2 && xs.every((n) => Number.isFinite(n))
+    const at = msg.at
+    if (at !== null && !(('c' in at && finite(at.c)) || ('p' in at && typeof at.p === 'string' && finite(at.l)))) return
+    if (msg.hover !== null && (typeof msg.hover !== 'string' || msg.hover.length > 80)) return
+    for (const m of this.room.members) {
+      if (m.connected && m.id !== from) this.io.send(m.id, { t: 'presence', from, at, hover: msg.hover })
+    }
+  }
 
   private changed(): void {
     this.io.save(this.room)

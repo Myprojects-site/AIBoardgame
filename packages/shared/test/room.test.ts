@@ -201,6 +201,33 @@ test('넘길 사람이 없으면 넘기지 않는다', () => {
   assert.equal(t.host.handoff(), null)
 })
 
+test('손·보는 중: 저장하지 않고 다른 사람에게만 바로 넘김, 틀린 값은 버림', () => {
+  const t = setup()
+  const saves = t.saved()
+  const before = (id: string) => (t.inbox.get(id) ?? []).length
+  const [hb, cb, bb] = [before('host'), before('c'), before('b')]
+  t.host.receive('b', { t: 'presence', at: { c: [1.5, -2] }, hover: '{"kind":"market"}' })
+  assert.equal(t.saved(), saves) // 저장 안 함
+  assert.equal(before('b'), bb) // 보낸 사람에게는 안 감
+  const got = t.inbox.get('c')!.slice(cb)
+  assert.deepEqual(got, [{ t: 'presence', from: 'b', at: { c: [1.5, -2] }, hover: '{"kind":"market"}' }])
+  assert.equal(before('host'), hb + 1)
+
+  t.host.receive('b', { t: 'presence', at: { c: [Number.NaN, 0] }, hover: null })
+  t.host.receive('b', { t: 'presence', at: { p: 'c', l: [0.5, 0.1] }, hover: 'x'.repeat(200) })
+  assert.equal(before('c'), cb + 1)
+})
+
+test('반응: 정해진 이모지만, 보낸 사람 포함 모두에게', () => {
+  const t = setup()
+  t.host.receive('b', { t: 'react', emoji: '👏' })
+  t.host.receive('b', { t: 'react', emoji: '<script>' })
+  for (const id of ['host', 'b', 'c']) {
+    const reacts = t.inbox.get(id)!.filter((m) => m.t === 'react')
+    assert.deepEqual(reacts, [{ t: 'react', from: 'b', emoji: '👏' }])
+  }
+})
+
 test('채팅: 앞뒤 공백 정리, 길이 제한, 50줄만 보관', () => {
   const t = setup(['host', 'b'])
   t.host.receive('b', { t: 'chat', text: '   ' })
